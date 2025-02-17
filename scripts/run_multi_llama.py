@@ -291,6 +291,7 @@ if __name__ == "__main__":
 
     
     # save generated plans
+    print("Storing generated plans...")
     exec_folders = []
     if args.log_results:
         line = {}
