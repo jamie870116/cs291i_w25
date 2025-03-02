@@ -38,6 +38,8 @@ Create a file named ```llama_api_key.txt``` in the root folder of the project an
 
 
 ## Running Script
+
+### generate the plan
 Run the following command to generate output execuate python scripts to perform the tasks in the given AI2Thor floor plans. 
 
 Refer to https://ai2thor.allenai.org/demo for the layout of various AI2Thor floor plans.
@@ -48,13 +50,35 @@ Note: Refer to the script for running it on different versions of GPT models and
 
 The above script should generate the executable code and store it in the ```logs``` folder.
 
-
+### generate the executable code 
 Run the following script to execute the above generated scripts and execute it in an AI2THOR environment. 
 
 The script requires command which needs to be executed as parameter. ```command``` needs to be the folder name in the ```logs``` folder where the executable plans generated are stored. 
 ```
 python3 scripts/execute_plan.py --command {command}
 ```
+
+### run the the executable code 
+Find the corresponding executable code ```executable_plan.py``` in  ```\logs\*\```.
+
+For example: 
+```
+python logs/_Turn_on_Sink_faucet_and_put_toilet_paper_in_the_trash_plans_gpt_gpt-4_03-01-2025-13-56-32/executable_plan.py
+```
+Once you run the the executable code, you suppose to get a ```environment_states.json``` file.
+
+### replan
+
+**TBD** Not yet implement. (replan using LLM and prev_stat of environment)
+
+run
+
+```
+python scripts/replan.py --pre-state {}
+```
+
+The script requires command which needs to be executed as parameter. ```pre-state``` needs to be the folder name in the ```logs``` folder where the executable plans generated are stored. 
+
 
 ## Dataset
 The repository contains numerous commands and robots with various skill sets to perform heterogenous robot tasks. 
