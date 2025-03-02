@@ -18,6 +18,24 @@ sys.path.append(".")
 import resources.actions as actions
 import resources.robots as robots
 
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--floor-plan", type=int, required=True)
+    parser.add_argument("--llama-version", type=str, default="llama3.3-70b", 
+                        choices=['llama3.1-405b', 'llama3.3-70b', 'llama3.1-70b', 'llama3.1-8b', 'deepseek-r1', 'deepseek-v3', 'mixtral-8x22b-instruct', 'gemma2-27b'])
+    
+    parser.add_argument("--prompt-decompse-set", type=str, default="train_task_decompose", 
+                        choices=['train_task_decompose', 'train_task_decompose_llama'])
+    
+    parser.add_argument("--prompt-allocation-set", type=str, default="train_task_allocation", 
+                        choices=['train_task_allocation', 'train_task_allocation_llama'])
+    
+    parser.add_argument("--test-set", type=str, default="final_test", 
+                        choices=['final_test'])
+    
+    parser.add_argument("--log-results", type=bool, default=True)
+    
+    args = parser.parse_args()
 
 def LM(prompt, llama_version, max_tokens=128, temperature=0, stop=None, logprobs=1, frequency_penalty=0, isAllocate=False):
     

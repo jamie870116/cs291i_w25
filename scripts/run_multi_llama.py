@@ -34,8 +34,8 @@ def LM(prompt, llama_version, max_tokens=128, temperature=0, stop=None, logprobs
 
     return response, content.strip()
 
-def set_api_key(openai_api_key):
-    client.api_key = Path(openai_api_key + '.txt').read_text()
+# def set_api_key(openai_api_key):
+#     client.api_key = Path(openai_api_key + '.txt').read_text()
 
 # Function returns object list with name and properties.
 def convert_to_dict_objprop(objs, obj_mass):
@@ -82,20 +82,45 @@ def allocate_robots(decomposed_plan, prompt, available_robots, objects_ai, llama
         allocated_plan.append(text)
     return allocated_plan
 
-def generate_code(decomposed_plan, allocated_plan, prompt, available_robots, llama_version):
+def generate_code(decomposed_plan, allocated_plan, prompt, available_robots, llama_version, feedbacks=None):
     code_plan = []
-    for i, (plan, solution) in enumerate(zip(decomposed_plan, allocated_plan)):
-        curr_prompt = prompt + plan
-        curr_prompt += f"\n# TASK ALLOCATION"
-        curr_prompt += f"\n\nrobots = {available_robots[i]}"
-        curr_prompt += solution
-        curr_prompt += f"\n# CODE Solution  \n"
-        
-        messages = [{"role": "system", "content": "You are a Robot Task Allocation Expert"},{"role": "user", "content": curr_prompt}]
-        _, text = LM(messages, llama_version, max_tokens=1400, frequency_penalty=0.4)
+    if feedbacks is None:
+        for i, (plan, solution) in enumerate(zip(decomposed_plan, allocated_plan)):
+            curr_prompt = prompt + plan
+            curr_prompt += f"\n# TASK ALLOCATION"
+            curr_prompt += f"\n\nrobots = {available_robots[i]}"
+            curr_prompt += solution
+            curr_prompt += f"\n# CODE Solution  \n"
+            
+            messages = [{"role": "system", "content": "You are a Robot Task Allocation Expert"},{"role": "user", "content": curr_prompt}]
+            _, text = LM(messages, llama_version, max_tokens=1400, frequency_penalty=0.4)
 
-        code_plan.append(text)
+            code_plan.append(text)
+    else:
+        for i, (plan, solution, feedback) in enumerate(zip(decomposed_plan, allocated_plan, feedbacks)):
+            curr_prompt = prompt + plan
+            curr_prompt += f"\n# TASK ALLOCATION"
+            curr_prompt += f"\n\nrobots = {available_robots[i]}"
+            curr_prompt += solution
+            curr_prompt += f"\n# FEEDBACK"
+            curr_prompt += feedback
+            messages = [{"role": "system", "content": "You are a Robot Task Allocation Expert. You are given a decomposed plan, a task allocation, and a feedback. You need to modify the code to make it better based on the feedback. Make sure the geenrated code is correct and works."},{"role": "user", "content": curr_prompt}]
+            _, text = LM(messages, llama_version, max_tokens=1400, frequency_penalty=0.4)
+            code_plan.append(text)
+
     return code_plan
+
+def review_plan(decomposed_plan, allocated_plan, prompt, available_robots, llama_version):
+    feedbacks = []
+    for i, (plan, solution) in enumerate(zip(decomposed_plan, allocated_plan)):
+        curr_prompt = prompt + "this is the decomposed_plan: ###" + plan + "###"
+        curr_prompt += f"\n# And this is the TASK ALLOCATION: ###"
+        curr_prompt += f"\n\nrobots = {available_robots[i]}"
+        curr_prompt += solution + "###"
+        messages = [{'role':'system', 'content': "You are an excellent planner. You are given a decomposed plan and a task allocation. You need to review the plan and the allocation and provide feedback. The feedback should be in the form of a list of suggestions for the plan."}, {"role": "user", "content": curr_prompt}]
+        _, feedback = LM(messages, llama_version, max_tokens=500, frequency_penalty=0.4)
+        feedbacks.append(feedback)
+    return feedbacks
 
 def review_code(decomposed_plan, allocated_plan, code_plan, prompt, available_robots, llama_version):
     feedbacks = []
@@ -121,7 +146,7 @@ def modify_code(original_code_plan, decomposed_plan, allocated_plan,feedbacks, p
         curr_prompt += f"\n\nrobots = {available_robots[i]}"
         curr_prompt += solution
         curr_prompt += f"\n# This is the original CODE Solution  \n" + original_code
-        curr_prompt += f"\n# This is the feedback on the original CODE Solution  \n" + feedback
+        curr_prompt += f"\n# This is the feedback for the original CODE Solution  \n" + feedback
         role_content = 'You are a Robot Task Allocation Expert. And You are given a task, a solution, and the feedback on the previous plan. Now you need to based on the feedback, modify the code to make it better.'
         messages = [{"role": "system", "content": role_content},{"role": "user", "content": curr_prompt}]
         _, text = LM(messages, llama_version, max_tokens=1400, frequency_penalty=0.4)
@@ -130,13 +155,10 @@ def modify_code(original_code_plan, decomposed_plan, allocated_plan,feedbacks, p
     return new_code_plan
 
 
-
-
-if __name__ == "__main__":
+def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--floor-plan", type=int, required=True)
-    parser.add_argument("--openai-api-key-file", type=str, default="llama_api_key")
-    parser.add_argument("--llama-version", type=str, default="llama3.3-70b", 
+    parser.add_argument("--floor-plan", type=int, required=True, help="Floor plan number")
+    parser.add_argument("--llama-version", type=str, default="llama3.3-70b", help="LLM version",
                         choices=['llama3.1-405b', 'llama3.3-70b', 'llama3.1-70b', 'llama3.1-8b', 'deepseek-r1', 'deepseek-v3', 'mixtral-8x22b-instruct', 'gemma2-27b'])
     
     parser.add_argument("--prompt-decompse-set", type=str, default="train_task_decompose", 
@@ -149,26 +171,36 @@ if __name__ == "__main__":
                         choices=['final_test'])
     
     parser.add_argument("--log-results", type=bool, default=True)
-    
-    args = parser.parse_args()
 
-    
-    if not os.path.isdir(f"./logs/"):
-        os.makedirs(f"./logs/")
-        
-    # read the tasks        
+    return parser.parse_args()
+
+def read_tasks(test_set, floor_plan):
     test_tasks = []
     robots_test_tasks = []  
     gt_test_tasks = []    
     trans_cnt_tasks = []
     max_trans_cnt_tasks = []  
-    with open (f"./data/{args.test_set}/FloorPlan{args.floor_plan}.json", "r") as f:
+    with open (f"./data/{test_set}/FloorPlan{floor_plan}.json", "r") as f:
         for line in f.readlines():
             test_tasks.append(list(json.loads(line).values())[0])
             robots_test_tasks.append(list(json.loads(line).values())[1])
             gt_test_tasks.append(list(json.loads(line).values())[2])
             trans_cnt_tasks.append(list(json.loads(line).values())[3])
             max_trans_cnt_tasks.append(list(json.loads(line).values())[4])
+    return test_tasks, robots_test_tasks, gt_test_tasks, trans_cnt_tasks, max_trans_cnt_tasks
+
+
+if __name__ == "__main__":
+    
+    args = get_args()
+
+    
+    if not os.path.isdir(f"./logs/"):
+        os.makedirs(f"./logs/")
+        
+    # read the tasks 
+    test_tasks, robots_test_tasks, gt_test_tasks, trans_cnt_tasks, max_trans_cnt_tasks = read_tasks(args.test_set, args.floor_plan)       
+    
                     
     print(f"\n----Test set tasks----\n{test_tasks}\nTotal: {len(test_tasks)} tasks\n")
     # prepare list of robots for the tasks
@@ -219,6 +251,17 @@ if __name__ == "__main__":
     prompt += "\n\n The following is the sample solution of an allocation plan, please follow the same structure and format:" + allocated_prompt + "\n\n"
     allocated_plan = allocate_robots(decomposed_plan, prompt, available_robots, objects_ai, args.llama_version)
     
+    ######### Train Plan Review Process - feedback ########
+    print ("Generating Feedback...")
+    prompt = f"You are an excellent planner. You are given a decomposed plan and a task allocation. You need to review the plan and the allocation and provide feedback based on whether the plan is feasible or not. You should be able to identify the skills required for each subtask and the skills each robot possesses. You should be able to identify the mass of the objects and the mass capacity of the robots. You should be able to identify the dependencies between the subtasks. You should be able to identify the best way to allocate the robots to the subtasks."
+    prompt += "These are the skills and the objects that the robot can perform or interact with: " 
+    prompt += f"from skills import " + actions.ai2thor_actions
+    prompt += f"\nimport time"
+    prompt += f"\nimport threading"
+    prompt += objects_ai
+    prompt += f"\n\n# The following are the decomposed plan and the task allocation for each task:"
+    feedbacks = review_plan(decomposed_plan, allocated_plan, prompt, available_robots, args.llama_version)
+
     ######## Train Task Allocation - CODE Solution ########
     print ("Generating Code Solution...")
     prompt = f"from skills import " + actions.ai2thor_actions
@@ -239,16 +282,29 @@ if __name__ == "__main__":
 
     prompt += "\n\n" + code_prompt + "\n\n"
     prompt += "\n\n" + final_exe_plan + "\n\n"
-    
-    code_plan = generate_code(decomposed_plan, allocated_plan, prompt, available_robots, args.llama_version)
 
-    ######## Train Review Process - feedback ########
-    print ("Generating Feedback...")
-    prompt = "These are the skills and the objects that the robot can perform or interact with: " 
-    prompt += f"from skills import " + actions.ai2thor_actions
-    prompt += f"\nimport time"
-    prompt += f"\nimport threading"
-    prompt += objects_ai
+    if feedbacks:
+        code_plan = generate_code(decomposed_plan, allocated_plan, prompt, available_robots, args.llama_version, feedbacks)
+    else:
+        code_plan = generate_code(decomposed_plan, allocated_plan, prompt, available_robots, args.llama_version)
+
+    ######## Train Code Review Process - Code feedback ########
+    # print ("Generating Feedback...")
+    # prompt = "These are the skills and the objects that the robot can perform or interact with: " 
+    # prompt += f"from skills import " + actions.ai2thor_actions
+    # prompt += f"\nimport time"
+    # prompt += f"\nimport threading"
+    # prompt += objects_ai
+
+    # feedbacks = review_code(decomposed_plan, allocated_plan, code_plan, prompt, available_robots, args.llama_version)
+
+    ######## Train Modify Code - Modified CODE Solution ########
+    # print ("Modifying Code and generating final code solution...")
+    # prompt = "These are the skills and the objects that the robot can perform or interact with: " 
+    # prompt += f"from skills import " + actions.ai2thor_actions
+    # prompt += f"\nimport time"
+    # prompt += f"\nimport threading"
+    # prompt += objects_ai
     
     # prompt += f"\n\n# The following is the sample code for the solution: ###"
     # prompt_file1 = os.getcwd() + "/data/pythonic_plans/" + args.prompt_allocation_set + "_code.py"
@@ -263,31 +319,7 @@ if __name__ == "__main__":
 
     # prompt += "\n\n" + code_prompt + "\n\n"
     # prompt += "\n\n" + final_exe_plan + "\n\n"
-
-    feedbacks = review_code(decomposed_plan, allocated_plan, code_plan, prompt, available_robots, args.llama_version)
-
-    ######## Train Modify Code - Modified CODE Solution ########
-    print ("Modifying Code and generating final code solution...")
-    prompt = "These are the skills and the objects that the robot can perform or interact with: " 
-    prompt += f"from skills import " + actions.ai2thor_actions
-    prompt += f"\nimport time"
-    prompt += f"\nimport threading"
-    prompt += objects_ai
-    
-    prompt += f"\n\n# The following is the sample code for the solution: ###"
-    prompt_file1 = os.getcwd() + "/data/pythonic_plans/" + args.prompt_allocation_set + "_code.py"
-    code_prompt_file = open(prompt_file1, "r")
-    code_prompt = code_prompt_file.read()
-    code_prompt_file.close()
-
-    prompt_file2 = os.getcwd() + "/data/pythonic_plans/train_final_exe_plan.py"
-    final_exe_plan_file = open(prompt_file2, "r")
-    final_exe_plan = final_exe_plan_file.read()
-    final_exe_plan_file.close()
-
-    prompt += "\n\n" + code_prompt + "\n\n"
-    prompt += "\n\n" + final_exe_plan + "\n\n"
-    new_code_plan = modify_code(code_plan, decomposed_plan, allocated_plan, feedbacks, prompt, available_robots, args.llama_version)
+    # new_code_plan = modify_code(code_plan, decomposed_plan, allocated_plan, feedbacks, prompt, available_robots, args.llama_version)
 
     
     # save generated plans
@@ -322,14 +354,14 @@ if __name__ == "__main__":
             with open(f"./logs/{folder_name}/allocated_plan.py", 'w') as a:
                 a.write(allocated_plan[idx])
                 
-            with open(f"./logs/{folder_name}/original_code_plan.py", 'w') as x:
+            with open(f"./logs/{folder_name}/code_plan.py", 'w') as x:
                 x.write(code_plan[idx])
 
             with open(f"./logs/{folder_name}/feedbacks.py", 'w') as b:
                 b.write(feedbacks[idx])
 
-            with open(f"./logs/{folder_name}/code_plan.py", 'w') as c:
-                c.write(new_code_plan[idx])
+            # with open(f"./logs/{folder_name}/code_plan.py", 'w') as c:
+            #     c.write(new_code_plan[idx])
             
             
             

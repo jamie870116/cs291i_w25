@@ -163,7 +163,9 @@ def get_ai2_thor_objects(floor_plan_id):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--floor-plan", type=int, required=True)
+    # parser.add_argument("--floor-plan", type=int, required=True)
+    parser.add_argument("--pre-state", type=str, required=True)
+
     parser.add_argument("--openai-api-key-file", type=str, default="api_key")
     parser.add_argument("--gemini-api-key-file", type=str, default="gemini_api_key")
 
@@ -185,6 +187,7 @@ def get_args():
 
     parser.add_argument("--log-results", type=bool, default=True)
 
+    
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -197,130 +200,152 @@ if __name__ == "__main__":
     if not os.path.isdir(f"./logs/"):
         os.makedirs(f"./logs/")
 
+
+    final_task = "Turn on Sink faucet and put toilet paper in the trash"
+    
+    # read the previous environment
+    with open(f"./logs/{args.pre_state}/environment_states.json", "r") as file:
+        data = json.load(file)
+
+    obj_list = data['object_info']
+    agents = data['agent_info']
+    reachable_positions = data['reachable_positions']
+    obj_changed = data['obj_changed']
+    no_agent = len(agents)
+    agents_actions = actions.ai2thor_actions
+    
+    print('obj_list', obj_list)
+    print('agents', agents)
+    print('reachable_positions', reachable_positions)
+    print('obj_changed', obj_changed)
+
+
     # read the tasks        
-    test_tasks = []
-    robots_test_tasks = []  
-    gt_test_tasks = []    
-    trans_cnt_tasks = []
-    max_trans_cnt_tasks = []  
-    with open (f"./data/{args.test_set}/FloorPlan{args.floor_plan}.json", "r") as f:
-        for line in f.readlines():
-            # print(line)
-            test_tasks.append(list(json.loads(line).values())[0])
-            robots_test_tasks.append(list(json.loads(line).values())[1])
-            gt_test_tasks.append(list(json.loads(line).values())[2])
-            trans_cnt_tasks.append(list(json.loads(line).values())[3])
-            max_trans_cnt_tasks.append(list(json.loads(line).values())[4])
+    # test_tasks = []
+    # robots_test_tasks = []  
+    # gt_test_tasks = []    
+    # trans_cnt_tasks = []
+    # max_trans_cnt_tasks = []  
+    # with open (f"./data/{args.test_set}/FloorPlan{args.floor_plan}.json", "r") as f:
+    #     for line in f.readlines():
+    #         # print(line)
+    #         test_tasks.append(list(json.loads(line).values())[0])
+    #         robots_test_tasks.append(list(json.loads(line).values())[1])
+    #         gt_test_tasks.append(list(json.loads(line).values())[2])
+    #         trans_cnt_tasks.append(list(json.loads(line).values())[3])
+    #         max_trans_cnt_tasks.append(list(json.loads(line).values())[4])
 
-    print(f"\n----Test set tasks----\n{test_tasks}\nTotal: {len(test_tasks)} tasks\n")
-    # prepare list of robots for the tasks
-    available_robots = []
-    for robots_list in robots_test_tasks:
-        task_robots = []
-        for i, r_id in enumerate(robots_list):
-            rob = robots.robots [r_id-1]
-            # rename the robot
-            rob['name'] = 'robot' + str(i+1)
-            task_robots.append(rob)
-        available_robots.append(task_robots)
+    # print(f"\n----Test set tasks----\n{test_tasks}\nTotal: {len(test_tasks)} tasks\n")
 
 
-    ######## Train Task Decomposition ########
-
-    # prepare train decompostion demonstration for ai2thor samples
-    prompt = f"from skills import " + actions.ai2thor_actions
-    prompt += f"\nimport time"
-    prompt += f"\nimport threading"
-    objects_ai = f"\n\nobjects = {get_ai2_thor_objects(args.floor_plan)}"
-    prompt += objects_ai
-
-    # read input train prompts
-    decompose_prompt_file = open(os.getcwd() + "/data/pythonic_plans/" + args.prompt_decompse_set + ".py", "r")
-    decompose_prompt = decompose_prompt_file.read()
-    decompose_prompt_file.close()
-
-    prompt += "\n\n" + decompose_prompt
-
-    print ("Generating Decompsed Plans...")
-
-    if args.llm_model == "gpt":
-        decomposed_plan = decompose_task(test_tasks, prompt, args.llm_model, args.gpt_version)
-    elif args.llm_model == "gemini":
-        decomposed_plan = decompose_task(test_tasks, prompt, args.llm_model, args.gemini_model)
-
-    # print('decomposed_plan  ', decomposed_plan[:100])
-    print ("Generating Allocation Solution...")
-
-    ######## Train Task Allocation - SOLUTION ########
-    prompt = f"from skills import " + actions.ai2thor_actions
-    prompt += f"\nimport time"
-    prompt += f"\nimport threading"
-
-    prompt_file = os.getcwd() + "/data/pythonic_plans/" + args.prompt_allocation_set + "_solution.py"
-    allocated_prompt_file = open(prompt_file, "r")
-    allocated_prompt = allocated_prompt_file.read()
-    allocated_prompt_file.close()
-
-    prompt += "\n\n" + allocated_prompt + "\n\n"
-    if args.llm_model == "gpt":
-        allocated_plan = allocate_robots(decomposed_plan, prompt, available_robots, objects_ai, args.llm_model, args.gpt_version)
-    elif args.llm_model == "gemini":
-        allocated_plan = allocate_robots(decomposed_plan, prompt, available_robots, objects_ai, args.llm_model, args.gemini_model)
-
-    print ("Generating Allocated Code...")
-
-    ######## Train Task Allocation - CODE Solution ########
-
-    prompt = f"from skills import " + actions.ai2thor_actions
-    prompt += f"\nimport time"
-    prompt += f"\nimport threading"
-    prompt += objects_ai
-
-    prompt_file1 = os.getcwd() + "/data/pythonic_plans/" + args.prompt_allocation_set + "_code.py"
-    code_prompt_file = open(prompt_file1, "r")
-    code_prompt = code_prompt_file.read()
-    code_prompt_file.close()
-
-    prompt += "\n\n" + code_prompt + "\n\n"
-    if args.llm_model == "gpt": 
-        code_plan = generate_code(decomposed_plan, allocated_plan, prompt, available_robots, args.llm_model, args.gpt_version)
-    elif args.llm_model == "gemini":
-        code_plan = generate_code(decomposed_plan, allocated_plan, prompt, available_robots, args.llm_model, args.gemini_model)
+    # # prepare list of robots for the tasks
+    # available_robots = []
+    # for robots_list in robots_test_tasks:
+    #     task_robots = []
+    #     for i, r_id in enumerate(robots_list):
+    #         rob = robots.robots [r_id-1]
+    #         # rename the robot
+    #         rob['name'] = 'robot' + str(i+1)
+    #         task_robots.append(rob)
+    #     available_robots.append(task_robots)
 
 
-    print("Storing generated plans...")
-    # save generated plan
-    exec_folders = []
-    if args.log_results:
-        line = {}
-        now = datetime.now() # current date and time
-        date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
+    # ######## Train Task Decomposition ########
 
-        for idx, task in enumerate(test_tasks):
-            task_name = "{fxn}".format(fxn = '_'.join(task.split(' ')))
-            task_name = task_name.replace('\n','')
-            folder_name = f"{task_name}_plans_{args.llm_model}_{args.gpt_version}_{date_time}"
-            exec_folders.append(folder_name)
+    # # prepare train decompostion demonstration for ai2thor samples
+    # prompt = f"from skills import " + actions.ai2thor_actions
+    # prompt += f"\nimport time"
+    # prompt += f"\nimport threading"
+    # objects_ai = f"\n\nobjects = {get_ai2_thor_objects(args.floor_plan)}"
+    # prompt += objects_ai
 
-            os.mkdir("./logs/"+folder_name)
-            print(f'start storing {task}')
-            with open(f"./logs/{folder_name}/log.txt", 'w') as f:
-                f.write(task)
-                f.write(f"\n\nGPT Version: {args.gpt_version}")
-                f.write(f"\n\nFloor Plan: {args.floor_plan}")
-                f.write(f"\n{objects_ai}")
-                f.write(f"\nrobots = {available_robots[idx]}")
-                f.write(f"\nground_truth = {gt_test_tasks[idx]}")
-                f.write(f"\ntrans = {trans_cnt_tasks[idx]}")
-                f.write(f"\nmax_trans = {max_trans_cnt_tasks[idx]}")
+    # # read input train prompts
+    # decompose_prompt_file = open(os.getcwd() + "/data/pythonic_plans/" + args.prompt_decompse_set + ".py", "r")
+    # decompose_prompt = decompose_prompt_file.read()
+    # decompose_prompt_file.close()
 
-            with open(f"./logs/{folder_name}/decomposed_plan.py", 'w') as d:
-                d.write(decomposed_plan[idx])
+    # prompt += "\n\n" + decompose_prompt
 
-            with open(f"./logs/{folder_name}/allocated_plan.py", 'w') as a:
-                a.write(allocated_plan[idx])
+    # print ("Generating Decompsed Plans...")
 
-            with open(f"./logs/{folder_name}/code_plan.py", 'w') as x:
-                x.write(code_plan[idx])
+    # if args.llm_model == "gpt":
+    #     decomposed_plan = decompose_task(test_tasks, prompt, args.llm_model, args.gpt_version)
+    # elif args.llm_model == "gemini":
+    #     decomposed_plan = decompose_task(test_tasks, prompt, args.llm_model, args.gemini_model)
 
-            print(f'{task} Plan Stored at "./logs/{folder_name}"')
+    # # print('decomposed_plan  ', decomposed_plan[:100])
+    # print ("Generating Allocation Solution...")
+
+    # ######## Train Task Allocation - SOLUTION ########
+    # prompt = f"from skills import " + actions.ai2thor_actions
+    # prompt += f"\nimport time"
+    # prompt += f"\nimport threading"
+
+    # prompt_file = os.getcwd() + "/data/pythonic_plans/" + args.prompt_allocation_set + "_solution.py"
+    # allocated_prompt_file = open(prompt_file, "r")
+    # allocated_prompt = allocated_prompt_file.read()
+    # allocated_prompt_file.close()
+
+    # prompt += "\n\n" + allocated_prompt + "\n\n"
+    # if args.llm_model == "gpt":
+    #     allocated_plan = allocate_robots(decomposed_plan, prompt, available_robots, objects_ai, args.llm_model, args.gpt_version)
+    # elif args.llm_model == "gemini":
+    #     allocated_plan = allocate_robots(decomposed_plan, prompt, available_robots, objects_ai, args.llm_model, args.gemini_model)
+
+    # print ("Generating Allocated Code...")
+
+    # ######## Train Task Allocation - CODE Solution ########
+
+    # prompt = f"from skills import " + actions.ai2thor_actions
+    # prompt += f"\nimport time"
+    # prompt += f"\nimport threading"
+    # prompt += objects_ai
+
+    # prompt_file1 = os.getcwd() + "/data/pythonic_plans/" + args.prompt_allocation_set + "_code.py"
+    # code_prompt_file = open(prompt_file1, "r")
+    # code_prompt = code_prompt_file.read()
+    # code_prompt_file.close()
+
+    # prompt += "\n\n" + code_prompt + "\n\n"
+    # if args.llm_model == "gpt": 
+    #     code_plan = generate_code(decomposed_plan, allocated_plan, prompt, available_robots, args.llm_model, args.gpt_version)
+    # elif args.llm_model == "gemini":
+    #     code_plan = generate_code(decomposed_plan, allocated_plan, prompt, available_robots, args.llm_model, args.gemini_model)
+
+
+    # print("Storing generated plans...")
+    # # save generated plan
+    # exec_folders = []
+    # if args.log_results:
+    #     line = {}
+    #     now = datetime.now() # current date and time
+    #     date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
+
+    #     for idx, task in enumerate(test_tasks):
+    #         task_name = "{fxn}".format(fxn = '_'.join(task.split(' ')))
+    #         task_name = task_name.replace('\n','')
+    #         folder_name = f"{task_name}_plans_{args.llm_model}_{args.gpt_version}_{date_time}"
+    #         exec_folders.append(folder_name)
+
+    #         os.mkdir("./logs/"+folder_name)
+    #         print(f'start storing {task}')
+    #         with open(f"./logs/{folder_name}/log.txt", 'w') as f:
+    #             f.write(task)
+    #             f.write(f"\n\nGPT Version: {args.gpt_version}")
+    #             f.write(f"\n\nFloor Plan: {args.floor_plan}")
+    #             f.write(f"\n{objects_ai}")
+    #             f.write(f"\nrobots = {available_robots[idx]}")
+    #             f.write(f"\nground_truth = {gt_test_tasks[idx]}")
+    #             f.write(f"\ntrans = {trans_cnt_tasks[idx]}")
+    #             f.write(f"\nmax_trans = {max_trans_cnt_tasks[idx]}")
+
+    #         with open(f"./logs/{folder_name}/decomposed_plan.py", 'w') as d:
+    #             d.write(decomposed_plan[idx])
+
+    #         with open(f"./logs/{folder_name}/allocated_plan.py", 'w') as a:
+    #             a.write(allocated_plan[idx])
+
+    #         with open(f"./logs/{folder_name}/code_plan.py", 'w') as x:
+    #             x.write(code_plan[idx])
+
+    #         print(f'{task} Plan Stored at "./logs/{folder_name}"')

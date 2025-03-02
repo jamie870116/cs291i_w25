@@ -1,10 +1,48 @@
 ### This is a sample of the final execution plan for the task.
-### The task is to wash the lettuce and place it on the countertop.
+### The sample task is to wash the lettuce and place it on the countertop.
 ### And I need you to generate a code solution based on the given allocation and decomposed plan.
-### The generated code should be able to fit into the following code, which will be added later on when I run the code
-### In this following code, only the line577-609 is the part that you need to generate the code for.
-### The rest of the code is already given so you don't need to worry about it.
 
+# This is the sample code for the task, which is the part that you need to generate the code for. You should generate the code based own what task and decomposed plan and allocated plan I provided to you leter.   
+###
+def wash_lettuce(robot_list):
+    # robot_list = [robot1]
+    # 0: SubTask 1: Wash the Lettuce
+    # 1: Go to the Lettuce using robot1.
+    GoToObject(robot_list[0],'Lettuce')
+    # 2: Pick up the Lettuce using robot1.
+    PickupObject(robot_list[0],'Lettuce')
+    # 3: Go to the Sink using robot1.
+    GoToObject(robot_list[0],'Sink')
+    # 4: Put the Lettuce inside the sink using robot1
+    PutObject(robot_list[0],'Lettuce', 'Sink')
+    # 5: Switch on the Faucet to clean the Lettuce using robot1
+    SwitchOn(robot_list[0],'Faucet')
+    # 6: Wait for a while to let the Lettuce clean using robot1.
+    time.sleep(5)
+    # 7: Switch off the Faucet using robot1
+    SwitchOff(robot_list[0],'Faucet')
+    # 8: Pick up the clean Lettuce using robot1.
+    PickupObject(robot_list[0],'Lettuce')
+
+def place_lettuce_on_countertop(robot_list):
+    # robot_list = [robot1]
+    # 0: SubTask 2: Place Lettuce on the Countertop
+    # 1: Go to the Countertop using robot1.
+    GoToObject(robot_list[0],'CounterTop')
+    # 2: Place the Lettuce on the Countertop using robot1
+    PutObject(robot_list[0],'Lettuce', 'CounterTop')
+
+# Execute SubTask 1
+wash_lettuce([robots[0]])
+
+# Execute SubTask 2
+place_lettuce_on_countertop([robots[0]]) 
+###
+
+# The generated code should be able to fit into the following code, which will be added later on when I run the code
+# NOTE: NO OTHER LINES ARE ALLOWED TO BE CHANGED. And make sure the code you generated is correct and works in this given code structure.
+# The following part of the code you can assumed is already given so you don't need to worry about it.
+###
 import math
 import re
 import shutil
@@ -576,40 +614,7 @@ def ThrowObject(robot, sw_obj):
     
     action_queue.append({'action':'ThrowObject', 'objectId':sw_obj_id, 'agent_id':agent_id}) 
     time.sleep(1)
-def wash_lettuce(robot_list):
-    # robot_list = [robot1]
-    # 0: SubTask 1: Wash the Lettuce
-    # 1: Go to the Lettuce using robot1.
-    GoToObject(robot_list[0],'Lettuce')
-    # 2: Pick up the Lettuce using robot1.
-    PickupObject(robot_list[0],'Lettuce')
-    # 3: Go to the Sink using robot1.
-    GoToObject(robot_list[0],'Sink')
-    # 4: Put the Lettuce inside the sink using robot1
-    PutObject(robot_list[0],'Lettuce', 'Sink')
-    # 5: Switch on the Faucet to clean the Lettuce using robot1
-    SwitchOn(robot_list[0],'Faucet')
-    # 6: Wait for a while to let the Lettuce clean using robot1.
-    time.sleep(5)
-    # 7: Switch off the Faucet using robot1
-    SwitchOff(robot_list[0],'Faucet')
-    # 8: Pick up the clean Lettuce using robot1.
-    PickupObject(robot_list[0],'Lettuce')
 
-def place_lettuce_on_countertop(robot_list):
-    # robot_list = [robot1]
-    # 0: SubTask 2: Place Lettuce on the Countertop
-    # 1: Go to the Countertop using robot1.
-    GoToObject(robot_list[0],'CounterTop')
-    # 2: Place the Lettuce on the Countertop using robot1
-    PutObject(robot_list[0],'Lettuce', 'CounterTop')
-
-# Execute SubTask 1
-wash_lettuce([robots[0]])
-
-# Execute SubTask 2
-place_lettuce_on_countertop([robots[0]])
-no_trans = 2
 
 for i in range(25):
     action_queue.append({'action':'Done'})
@@ -707,3 +712,4 @@ if tc == 1 and ru == 1:
 print (f"SR:{sr}, TC:{tc}, GCR:{gcr}, Exec:{exec}, RU:{ru}")
 
 generate_video()
+###

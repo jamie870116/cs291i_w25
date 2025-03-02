@@ -16,12 +16,12 @@ def append_trans_ctr(allocated_plan):
 
 def compile_aithor_exec_file(expt_name):
     log_path = os.getcwd() + "/logs/" + expt_name
+    
     executable_plan = ""
     
     # append the imports to the file
     import_file = Path(os.getcwd() + "/data/aithor_connect/imports_aux_fn.py").read_text()
     executable_plan += (import_file + "\n")
-    
     # append the list of robots and floor plan number
     log_file = open(log_path + "/log.txt")
     log_data = log_file.readlines()
@@ -61,7 +61,7 @@ parser.add_argument("--command", type=str, required=True)
 args = parser.parse_args()
 
 expt_name = args.command
-print (expt_name)
+print ('Run ', expt_name)
 ai_exec_file = compile_aithor_exec_file(expt_name)
-
-subprocess.run(["python", ai_exec_file])
+print('Finshed')
+# subprocess.run(["python", ai_exec_file])
