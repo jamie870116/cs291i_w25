@@ -43,13 +43,3 @@ def generate_video():
                                 '{}/video_{}.mp4'.format(os.path.dirname(__file__), view)]
             subprocess.call(command_set)
         
-def save_environment_states_to_file(object_info, agent_info, reachable_p):
-    data = {
-        "object_info": object_info,
-        "agent_info": agent_info,
-        "reachable_positions": reachable_p,
-    }
-    cur_path = os.path.dirname(__file__) + "/"
-    with open(os.path.join(cur_path, 'environment_states.json'), 'w') as f:
-        json.dump(data, f, indent=4)
-
