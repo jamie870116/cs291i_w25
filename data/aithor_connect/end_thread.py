@@ -98,6 +98,10 @@ print (f"SR:{sr}, TC:{tc}, GCR:{gcr}, Exec:{exec}, RU:{ru}")
 
 generate_video()
 
+event = c.last_event
+object_info = {}
+multi_agent_info = {}
+
 def save_environment_states_to_file(object_info, agent_info, reachable_p, obj_changed=None):
     data = {
         "object_info": object_info,
@@ -109,11 +113,6 @@ def save_environment_states_to_file(object_info, agent_info, reachable_p, obj_ch
     with open(os.path.join(cur_path, 'environment_states.json'), 'w') as f:
         json.dump(data, f, indent=4)
 
-
-event = c.last_event
-object_info = {}
-multi_agent_info = {}
-i = 0
 
 def closest_agent_to_object(agents, object):
     """
@@ -141,10 +140,13 @@ def closest_agent_to_object(agents, object):
     return closest_index
 
 agent_pos = []
-for e in multi_agent_event.events:
-    multi_agent_info['agent_'+ str(i)] = e.metadata['agent']
-    agent_pos.append(e.metadata['agent']['position'])
-    i += 1
+# c.last_event.events[agent_id].metadata
+for i in range(no_robot):
+    agent_e = c.last_event.events[i].metadata
+    multi_agent_info['agent_'+ str(i)] = agent_e['agent']
+    agent_pos.append(agent_e['agent']['position'])
+
+
 obj_changed = [[] for _ in range(no_robot)]
 for obj in event.metadata['objects']:
     cur_obj = {
@@ -171,5 +173,6 @@ reachable_p_ = c.step(action="GetReachablePositions").metadata["actionReturn"]
 reachable_p = [(p["x"], p["y"], p["z"]) for p in reachable_p_]
 c.stop()
 save_environment_states_to_file(object_info, multi_agent_info, reachable_p, obj_changed)
+
 
 
