@@ -62,7 +62,9 @@ def generate_video():
                                 '{}/video_{}.mp4'.format(os.path.dirname(__file__), view)]
             subprocess.call(command_set)
         
-
+'''
+### Initialization Start
+'''
 robots = [{'name': 'robot1', 'skills': ['GoToObject', 'OpenObject', 'CloseObject', 'BreakObject', 'SliceObject', 'SwitchOn', 'SwitchOff', 'PickupObject', 'PutObject', 'DropHandObject', 'ThrowObject', 'PushObject', 'PullObject'], 'mass': 100}, {'name': 'robot2', 'skills': ['GoToObject', 'OpenObject', 'CloseObject', 'BreakObject', 'SliceObject', 'SwitchOn', 'SwitchOff', 'PickupObject', 'PutObject', 'DropHandObject', 'ThrowObject', 'PushObject', 'PullObject'], 'mass': 100}]
 
 floor_no = 414
@@ -112,6 +114,9 @@ recp_id = None
 for i in range (no_robot):
     multi_agent_event = c.step(action="LookDown", degrees=35, agentId=i)
     # c.step(action="LookUp", degrees=30, 'agent_id':i)
+'''
+### Initialization End
+'''
 
 # 在文件开头添加配置
 DISPLAY_IMAGES = False  # 设置为 False 来禁用图像显示
@@ -2059,7 +2064,30 @@ save_environment_states_to_file(object_info, multi_agent_info, reachable_p, obj_
         ]
     ],
     "obj_changed": [
-        [],
+        [
+            {
+                "objectId": "Faucet|-00.43|+00.00|+00.76",
+                "objectType": "Faucet",
+                "position": {
+                    "x": -0.4259640574455261,
+                    "y": 0.001753091812133789,
+                    "z": 0.7631934881210327
+                },
+                "isPickedUp": false,
+                "isOpen": false,
+                "isSliced": false,
+                "isToggled": true,
+                "isBroken": false,
+                "isFilledWithLiquid": false,
+                "mass": 0.0,
+                "center": {
+                    "x": -0.4437064826488495,
+                    "y": 0.4478023052215576,
+                    "z": 0.8464309573173523
+                },
+                "state": "None"
+            }
+        ],
         [
             {
                 "objectId": "ToiletPaper|-02.93|+01.20|+01.46",
@@ -2099,9 +2127,9 @@ You should reason over the information above, and regenerate a new executable pl
 Before generating a new plan, write the previous failure reason in comment.
 Your output should be two part of code, one is the initialization part, and another is code plan part. 
 In ```previous plan``` given above, there are two sections and these are the two sections will later be replaced by your output: one starts with start with ### Code Plan Start and end with ### Code Plan End, this the section that how robot should take actions;
-another starts with ### Initialization Start and ends with ### Initialization End, this is the section of initialzation the environment(use Teleport to setup agents' position and pickup the specific object using objectID). 
+another starts with ### Initialization Start and ends with ### Initialization End, this is the section of initialzation the environment(use Teleport to setup agents' position and pickup the specific object using objectID, or Turn on something using objectID, make sure these is acted by the correct agent). 
 The code plan part do not need to redo the previously success subtask. The previously success subtask should be done in the Initialization stage.
-The two parts you generated should be able to fit into the rest of the code.
+The two parts you generated should be able to fit into the rest of the code. Make sure to retain the initialized parameters(such as action_queue, ground_truth...etc)
 Make sure the output file can successfully execute and stimulate the robot's actions and complete the final task. You should initialize the position of agents based on the ```env_state```.
 The code plan part no need to verify current state, just think of this is the next step from ```previous plan```.
 

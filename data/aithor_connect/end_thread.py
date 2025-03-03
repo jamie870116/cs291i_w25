@@ -164,7 +164,7 @@ for obj in event.metadata['objects']:
                     "state": obj.get("state", "None")
                 }
     object_info[obj['name']] = cur_obj
-    if obj['isPickedUp']:
+    if obj['isPickedUp'] or obj['isToggled']:
         closest_agent_idx = closest_agent_to_object(agent_pos, cur_obj)
         obj_changed[closest_agent_idx].append(cur_obj)
 

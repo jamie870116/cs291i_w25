@@ -1248,7 +1248,30 @@
         ]
     ],
     "obj_changed": [
-        [],
+        [
+            {
+                "objectId": "Faucet|-00.43|+00.00|+00.76",
+                "objectType": "Faucet",
+                "position": {
+                    "x": -0.4259640574455261,
+                    "y": 0.001753091812133789,
+                    "z": 0.7631934881210327
+                },
+                "isPickedUp": false,
+                "isOpen": false,
+                "isSliced": false,
+                "isToggled": true,
+                "isBroken": false,
+                "isFilledWithLiquid": false,
+                "mass": 0.0,
+                "center": {
+                    "x": -0.4437064826488495,
+                    "y": 0.4478023052215576,
+                    "z": 0.8464309573173523
+                },
+                "state": "None"
+            }
+        ],
         [
             {
                 "objectId": "ToiletPaper|-02.93|+01.20|+01.46",

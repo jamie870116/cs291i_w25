@@ -15,6 +15,9 @@ import os
 from glob import glob
 import json
 
+random.seed(55)
+
+
 def closest_node(node, nodes, no_robot, clost_node_location):
     crps = []
     distances = distance.cdist([node], nodes)[0]
@@ -43,7 +46,9 @@ def generate_video():
                                 '{}/video_{}.mp4'.format(os.path.dirname(__file__), view)]
             subprocess.call(command_set)
         
-
+'''
+### Initialization Start
+'''
 robots = [{'name': 'robot1', 'skills': ['GoToObject', 'OpenObject', 'CloseObject', 'BreakObject', 'SliceObject', 'SwitchOn', 'SwitchOff', 'PickupObject', 'PutObject', 'DropHandObject', 'ThrowObject', 'PushObject', 'PullObject'], 'mass': 100}, {'name': 'robot2', 'skills': ['GoToObject', 'OpenObject', 'CloseObject', 'BreakObject', 'SliceObject', 'SwitchOn', 'SwitchOff', 'PickupObject', 'PutObject', 'DropHandObject', 'ThrowObject', 'PushObject', 'PullObject'], 'mass': 100}]
 
 floor_no = 414
@@ -93,6 +98,9 @@ recp_id = None
 for i in range (no_robot):
     multi_agent_event = c.step(action="LookDown", degrees=35, agentId=i)
     # c.step(action="LookUp", degrees=30, 'agent_id':i)
+'''
+### Initialization Start
+'''
 
 # 在文件开头添加配置
 DISPLAY_IMAGES = False  # 设置为 False 来禁用图像显示
@@ -568,6 +576,10 @@ def ThrowObject(robot, sw_obj):
     
     action_queue.append({'action':'ThrowObject', 'objectId':sw_obj_id, 'agent_id':agent_id}) 
     time.sleep(1)
+
+'''
+### Code Plan Start
+'''
 def turn_on_sink_faucet(robot_list):
     # robot_list = [robot1]
     # 0: SubTask 1: Turn on Sink faucet
@@ -601,6 +613,10 @@ task1_thread.join()
 task2_thread.join()
 
 # Task Turn on Sink faucet and put toilet paper in the trash is done
+'''
+### Code Plan End
+'''
+
 no_trans = 1
 
 for i in range(25):
@@ -704,7 +720,6 @@ generate_video()
 event = c.last_event
 object_info = {}
 multi_agent_info = {}
-i = 0
 
 def save_environment_states_to_file(object_info, agent_info, reachable_p, obj_changed=None):
     data = {
@@ -744,10 +759,13 @@ def closest_agent_to_object(agents, object):
     return closest_index
 
 agent_pos = []
-for e in multi_agent_event.events:
-    multi_agent_info['agent_'+ str(i)] = e.metadata['agent']
-    agent_pos.append(e.metadata['agent']['position'])
-    i += 1
+# c.last_event.events[agent_id].metadata
+for i in range(no_robot):
+    agent_e = c.last_event.events[i].metadata
+    multi_agent_info['agent_'+ str(i)] = agent_e['agent']
+    agent_pos.append(agent_e['agent']['position'])
+
+
 obj_changed = [[] for _ in range(no_robot)]
 for obj in event.metadata['objects']:
     cur_obj = {
@@ -765,7 +783,7 @@ for obj in event.metadata['objects']:
                     "state": obj.get("state", "None")
                 }
     object_info[obj['name']] = cur_obj
-    if obj['isPickedUp']:
+    if obj['isPickedUp'] or obj['isToggled']:
         closest_agent_idx = closest_agent_to_object(agent_pos, cur_obj)
         obj_changed[closest_agent_idx].append(cur_obj)
 
