@@ -1,6 +1,8 @@
 ### This is a sample of the final execution plan for the task.
 ### The sample task is to wash the lettuce and place it on the countertop.
 ### And I need you to generate a code solution based on the given allocation and decomposed plan.
+### Please make sure the GoToObject have two parameters first is robots, second is dest_obj, robot name is in string like robot3
+### Do not include any explanations, comments, or extra text.
 
 # This is the sample code for the task, which is the part that you need to generate the code for. You should generate the code based own what task and decomposed plan and allocated plan I provided to you leter.   
 ###
@@ -626,7 +628,7 @@ task_over = True
 time.sleep(5)
 
 
-exec = float(success_exec) / float(total_exec)
+exec = 0.0 if total_exec == 0 else float(success_exec) / float(total_exec)
 
 print (ground_truth)
 objs = list([obj for obj in c.last_event.metadata["objects"]])
