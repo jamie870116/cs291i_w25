@@ -166,11 +166,11 @@ def replan_main(args, prev_error):
     print('Finished')
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--command", type=str, required=True)
-args = parser.parse_args()
+# parser = argparse.ArgumentParser()
+# parser.add_argument("--command", type=str, required=True)
+# args = parser.parse_args()
 
-expt_name = args.command
-ai_exec_file = replan_code_file(expt_name)
-print('Finished')
+# expt_name = args.command
+# ai_exec_file = replan_code_file(expt_name)
+# print('Finished')
 # subprocess.run(["python", ai_exec_file])

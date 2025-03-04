@@ -113,12 +113,3 @@ def execute_plan_main(args):
 
 # command
 # replanwe
-def execute_plan_main(args):
-    expt_name = args["command"]
-    print ('Run ', expt_name)
-    if args["replan"]:
-        ai_exec_file = compile_aithor_exec_file(expt_name, args["replan"])
-    else:
-        ai_exec_file = compile_aithor_exec_file(expt_name, False)
-    print('Finished')
-    # subprocess.run(["python", ai_exec_file])
