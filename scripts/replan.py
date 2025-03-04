@@ -44,11 +44,30 @@ def replan_code_file(expt_name):
     init_prompt_file.close()
 
     # actions
-    ai2thor_actions = ["GoToObject <robot><object>", "OpenObject <robot><object>", "CloseObject <robot><object>", 
+    actions = ["GoToObject <robot><object>", "OpenObject <robot><object>", "CloseObject <robot><object>", 
                    "BreakObject <robot><object>", "SliceObject <robot><object>", "SwitchOn <robot><object>", 
                    "SwitchOff <robot><object>", "CleanObject <robot><object>", "PickupObject <robot><object>", 
                    "PutObject <robot><object><receptacleObject>", "DropHandObject <robot><object>", 
                    "ThrowObject <robot><object>", "PushObject <robot><object>", "PullObject <robot><object>"]
+    actions = ', '.join(actions)
+
+    # actions for initialization
+    ai2thor_actions = [
+        "PickupObject", 
+        "DropHandObject", 
+        "ThrowObject", 
+        "PushObject", 
+        "PullObject", 
+        "OpenObject", 
+        "CloseObject", 
+        "ToggleObjectOn", 
+        "ToggleObjectOff", 
+        "PutObject", 
+        "SliceObject", 
+        "BreakObject", 
+        "UseUpObject", 
+        "EmptyLiquidFromObject"
+    ]
     ai2thor_actions = ', '.join(ai2thor_actions)
 
     # 组合 prompt
@@ -64,7 +83,7 @@ def replan_code_file(expt_name):
     ```object_info``` which is the objects list that are available in the environment, 
     ```reachable_positions``` which is the the position that an agent can reach within the environment, ```obj_changed``` which is the the object that ```agent[i]``` was interacting.
 
-    And you will also have ```ai2thor_actions``` which is the list of actions that an agent can perform. 
+    And you will also have ```ai2thor_actions``` which is the list of actions that an agent can perform. These actions should be use in Code Plan.
     you will have the information of what task needs to be done, what objects are available in the scene (including the position of the objects)
 
     """
@@ -76,7 +95,10 @@ def replan_code_file(expt_name):
     ## Environment States
     {json.dumps(environment_states, indent=2)}
 
-    ## ai2thor_actions
+    ## ai2thor_actions for code plan
+    {actions}
+
+    ## ai2thor_actions for initialization which you should use it in the right syntax according to the ai2thor library.
     {ai2thor_actions}
 
     # Task
@@ -87,11 +109,11 @@ def replan_code_file(expt_name):
     Your output should be two part of code, one is the initialization part, and another is code plan part. 
     For Initialization stage, which should be a segment of python code, starts with ### Initialization Start and ends with ### Initialization End, 
     this is the section of initialzation the environment, you need to use Teleport to setup agent's position.
-    And redo the previously completed subtasks, such as pickup the specific object using objectID, or Turn on something using objectID. Make sure these are acted by the correct agent.
+    And redo the previously completed subtasks, such as pickup the specific object using objectID, or Turn on something using objectID. Make sure these are acted by the correct agent. In this part, you should use the correct syntax and method of actionfrom ai2thor library.
     ##Here is an example of Initialization:
     {init_prompt}
 
-    The code plan part should be like the Original Code Plan. The code plan part do not need to redo the previously success subtask. The previously success subtask should be done in the Initialization stage.
+    The code plan part should be like the Original Code Plan. Refer to ai2thor_actions which is a list of actions that robot can perform. The code plan part do not need to redo the previously success subtask. The previously success subtask should be done in the Initialization stage.
     Your output format should be like:
     ### Initialization Start
     code of initialization...
@@ -103,15 +125,16 @@ def replan_code_file(expt_name):
 
     Make sure the output file can successfully execute and stimulate the robot's actions and complete the final task. You should initialize the position of agents based on the ```env_state```.
     The code plan part no need to verify current state, just think of this is the next step from ```previous plan```.
+    Make sure the type of the object is exist in ```object_info```. Sometimes the object name is not correct in Original Code Plan, which is one of the reason of failure.
 
     * NOTE: DO NOT OUTPUT ANYTHING EXTRA OTHER THAN WHAT HAS BEEN SPECIFIED
     NOTE: Do not output any other content. DO NOT use markdown format.
     Let's work this out in a step by step way to be sure we have the right answer.
 
     """
-    # print('=======')
-    # print(prompt)
-    # print('=======')
+    print('=======')
+    print(prompt)
+    print('=======')
     
     # 调用 OpenAI API (使用 gpt-4o-mini)
     response = client.chat.completions.create(
