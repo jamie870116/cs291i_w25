@@ -13,11 +13,11 @@ from openai import OpenAI
 client = OpenAI(api_key=Path('api_key.txt').read_text())
 import ai2thor.controller
 
-# from google import genai
-# from google.genai import types
+from google import genai
+from google.genai import types
 
 # genai.configure(api_key=Path('gemini_api_key.txt').read_text())
-# gemini_client = genai.Client(api_key=Path('gemini_api_key.txt').read_text())
+gemini_client = genai.Client(api_key=Path('gemini_api_key.txt').read_text())
 
 import sys
 sys.path.append(".")
@@ -26,9 +26,6 @@ import resources.actions as actions
 import resources.robots as robots
 
 def LM(prompt, llm_model, llm_version, max_tokens=128, temperature=0, stop=None, logprobs=1, frequency_penalty=0):
-    print("=======")
-    print(prompt)
-    print("=======")
     if llm_model == "gpt":
 
         if "gpt" not in llm_model:
@@ -122,7 +119,7 @@ def generate_code(decomposed_plan, allocated_plan, prompt, available_robots, llm
     if llm_model == "gemini":
         prompt += final_exe_plan
 
-    for i, (plan, solution) in enumerate(zip(decomposed_plan, allocated_plan)):
+    for i, (plan, solution) in enumerate(zip(decomposed_plan,allocated_plan)):
         curr_prompt = prompt + plan
         curr_prompt += f"\n# TASK ALLOCATION"
         curr_prompt += f"\n\nrobots = {available_robots[i]}"
