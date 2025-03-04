@@ -13,11 +13,11 @@ from openai import OpenAI
 client = OpenAI(api_key=Path('api_key.txt').read_text())
 import ai2thor.controller
 
-from google import genai
-from google.genai import types
+# from google import genai
+# from google.genai import types
 
-# genai.configure(api_key=Path('gemini_api_key.txt').read_text())
-gemini_client = genai.Client(api_key=Path('gemini_api_key.txt').read_text())
+# # genai.configure(api_key=Path('gemini_api_key.txt').read_text())
+# gemini_client = genai.Client(api_key=Path('gemini_api_key.txt').read_text())
 
 import sys
 sys.path.append(".")
