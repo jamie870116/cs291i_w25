@@ -14,6 +14,17 @@ def append_trans_ctr(allocated_plan):
     print ("No Breaks: ", brk_ctr)
     return brk_ctr
 
+# split the replan script into two parts
+def split_script(text):
+    segments = text.split("### Initialization End")
+    result = []
+    
+    for segment in segments:
+        if segment.strip():
+            result.append(segment.strip())
+
+    return result
+
 def compile_aithor_exec_file(expt_name, replan=False):
     log_path = os.getcwd() + "/logs/" + expt_name
     
@@ -37,23 +48,44 @@ def compile_aithor_exec_file(expt_name, replan=False):
     max_trans = log_data[11][12:]
     executable_plan += ("max_trans = " + max_trans + "\n")
     
-    # append the ai thoe connector and helper fns
-    connector_file = Path(os.getcwd() + "/data/aithor_connect/aithor_connect.py").read_text()
-    executable_plan += (connector_file + "\n")
-    
-    # append the allocated plan
-    if replan:
-        allocated_plan = Path(log_path + "/code_replan.py").read_text()
-    else:
+    if not replan:
+        # append the ai thoe connector and helper fns
+        connector_file = Path(os.getcwd() + "/data/aithor_connect/aithor_connect.py").read_text()
+        executable_plan += (connector_file + "\n")
+        
+        # append the allocated plan
         allocated_plan = Path(log_path + "/code_plan.py").read_text()
-    brks = append_trans_ctr(allocated_plan)
-    executable_plan += (allocated_plan + "\n")
-    executable_plan += ("no_trans = " + str(brks) + "\n")
 
-    # append the task thread termination
-    terminate_plan = Path(os.getcwd() + "/data/aithor_connect/end_thread.py").read_text()
-    executable_plan += (terminate_plan + "\n")
-    file_name = ''
+        brks = append_trans_ctr(allocated_plan)
+        executable_plan += (allocated_plan + "\n")
+        executable_plan += ("no_trans = " + str(brks) + "\n")
+
+        # append the task thread termination
+        terminate_plan = Path(os.getcwd() + "/data/aithor_connect/end_thread.py").read_text()
+        executable_plan += (terminate_plan + "\n")
+    else:
+        # append the ai thoe connector and helper fns
+        connector_env_file = Path(os.getcwd() + "/data/aithor_connect/aithor_connect_replan_env.py").read_text()
+        connector_util_file = Path(os.getcwd() + "/data/aithor_connect/aithor_connect_replan_util.py").read_text()
+        executable_plan += (connector_env_file + "\n")
+        
+        # get the replan plan
+        allocated_plan = Path(log_path + "/code_replan.py").read_text()
+        segments = split_script(allocated_plan)
+        brks = append_trans_ctr(segments[1])
+        # append the initialization part
+        executable_plan += (segments[0] + "\n")
+        executable_plan += (connector_util_file + "\n")
+        # append the replan part
+        executable_plan += (segments[1] + "\n")
+        executable_plan += ("no_trans = " + str(brks) + "\n")
+
+        # append the task thread termination
+        terminate_plan = Path(os.getcwd() + "/data/aithor_connect/end_thread.py").read_text()
+        executable_plan += (terminate_plan + "\n")
+
+        
+    file_name= ''
     if replan:
         file_name = 're_executable_plan.py'
     else:
