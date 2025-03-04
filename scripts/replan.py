@@ -7,7 +7,7 @@ from openai import OpenAI
 
 client = OpenAI(api_key=Path('api_key.txt').read_text())
 
-def replan_code_file(expt_name):
+def replan_code_file(expt_name, client=client, prev_error=None):
     log_path = os.getcwd() + "/logs/" + expt_name
 
     log_file = open(log_path + "/log.txt")
@@ -132,6 +132,12 @@ def replan_code_file(expt_name):
     Let's work this out in a step by step way to be sure we have the right answer.
 
     """
+    if prev_error:
+        prompt += f"""
+        ## Previous Error:
+        {prev_error}
+        """
+        
     print('=======')
     print(prompt)
     print('=======')
@@ -152,6 +158,12 @@ def replan_code_file(expt_name):
         f.write(generated_code)
 
     return (f"{log_path}/code_replan.py")
+
+def replan_main(args, prev_error):
+    client = OpenAI(api_key=Path('api_key.txt').read_text())
+    expt_name = args["command"]
+    ai_exec_file = replan_code_file(expt_name, client, prev_error)
+    print('Finished')
 
 
 parser = argparse.ArgumentParser()

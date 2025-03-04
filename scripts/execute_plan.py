@@ -96,6 +96,15 @@ def compile_aithor_exec_file(expt_name, replan=False):
         
     return (f"{log_path}/{file_name}.py")
 
+def execute_plan_main(args):
+    expt_name = args["command"]
+    print ('Run ', expt_name)
+    if args["replan"]:
+        ai_exec_file = compile_aithor_exec_file(expt_name, args["replan"])
+    else:
+        ai_exec_file = compile_aithor_exec_file(expt_name, False)
+    print('Finished')
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--command", type=str, required=True)
 parser.add_argument("--replan", action="store_true")
