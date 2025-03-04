@@ -58,27 +58,37 @@ The script requires command which needs to be executed as parameter. ```command`
 python3 scripts/execute_plan.py --command {command}
 ```
 
-### run the the executable code 
+### run the executable code 
 Find the corresponding executable code ```executable_plan.py``` in  ```\logs\*\```.
 
 For example: 
 ```
 python logs/_Turn_on_Sink_faucet_and_put_toilet_paper_in_the_trash_plans_gpt_gpt-4_03-01-2025-13-56-32/executable_plan.py
 ```
-Once you run the the executable code, you suppose to get a ```environment_states.json``` file.
+Once you run the executable code, you suppose to get a ```environment_states.json``` file.
 
 ### replan
 
 **TBD** Not yet implement. (replan using LLM and prev_stat of environment)
 
-run
+Generate an updated code in ```logs/{task}/code_replan.py```.
 
 ```
-python scripts/replan.py --pre-state {}
+python scripts/replan.py --command {}
 ```
 
-The script requires command which needs to be executed as parameter. ```pre-state``` needs to be the folder name in the ```logs``` folder where the executable plans generated are stored. 
+Run the following script to execute the above generated scripts and execute it in an AI2THOR environment. 
 
+The script requires command which needs to be executed as parameter. ```command``` needs to be the folder name in the ```logs``` folder where the executable plans generated are stored. 
+```
+python3 scripts/execute_plan.py --command {command} --replan
+```
+
+Finally, rerun the executable code.
+For example: 
+```
+python logs/_Turn_on_Sink_faucet_and_put_toilet_paper_in_the_trash_plans_gpt_gpt-4_03-01-2025-13-56-32/executable_plan.py
+```
 
 ## Dataset
 The repository contains numerous commands and robots with various skill sets to perform heterogenous robot tasks. 
