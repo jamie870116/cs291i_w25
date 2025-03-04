@@ -14,7 +14,7 @@ def append_trans_ctr(allocated_plan):
     print ("No Breaks: ", brk_ctr)
     return brk_ctr
 
-def compile_aithor_exec_file(expt_name):
+def compile_aithor_exec_file(expt_name, replan=False):
     log_path = os.getcwd() + "/logs/" + expt_name
     
     executable_plan = ""
@@ -42,7 +42,10 @@ def compile_aithor_exec_file(expt_name):
     executable_plan += (connector_file + "\n")
     
     # append the allocated plan
-    allocated_plan = Path(log_path + "/code_plan.py").read_text()
+    if replan:
+        allocated_plan = Path(log_path + "/code_replan.py").read_text()
+    else:
+        allocated_plan = Path(log_path + "/code_plan.py").read_text()
     brks = append_trans_ctr(allocated_plan)
     executable_plan += (allocated_plan + "\n")
     executable_plan += ("no_trans = " + str(brks) + "\n")
@@ -50,18 +53,24 @@ def compile_aithor_exec_file(expt_name):
     # append the task thread termination
     terminate_plan = Path(os.getcwd() + "/data/aithor_connect/end_thread.py").read_text()
     executable_plan += (terminate_plan + "\n")
-
-    with open(f"{log_path}/executable_plan.py", 'w') as d:
+    file_name = ''
+    if replan:
+        file_name = 're_executable_plan.py'
+    else:
+        file_name = 'executable_plan.py'
+        
+    with open(f"{log_path}/{file_name}", 'w') as d:
         d.write(executable_plan)
         
-    return (f"{log_path}/executable_plan.py")
+    return (f"{log_path}/{file_name}.py")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--command", type=str, required=True)
+parser.add_argument("--replan", action="store_true")
 args = parser.parse_args()
 
 expt_name = args.command
 print ('Run ', expt_name)
-ai_exec_file = compile_aithor_exec_file(expt_name)
-print('Finshed')
+ai_exec_file = compile_aithor_exec_file(expt_name, args.replan)
+print('Finished')
 # subprocess.run(["python", ai_exec_file])

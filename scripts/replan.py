@@ -1,351 +1,141 @@
-import copy
-import glob
-import json
 import os
-import argparse
 from pathlib import Path
-from datetime import datetime
-import random
 import subprocess
-
+import argparse
+import json
 from openai import OpenAI
 
 client = OpenAI(api_key=Path('api_key.txt').read_text())
-import ai2thor.controller
 
-from google import genai
-from google.genai import types
+def replan_code_file(expt_name):
+    log_path = os.getcwd() + "/logs/" + expt_name
 
-# genai.configure(api_key=Path('gemini_api_key.txt').read_text())
-gemini_client = genai.Client(api_key=Path('gemini_api_key.txt').read_text())
+    log_file = open(log_path + "/log.txt")
+    log_data = log_file.readlines()
+    # get task
+    task = log_data[0]
 
-import sys
-sys.path.append(".")
+    # get the number of robots
+    robot_no = log_data[8].count('name')
+    # get floor number
+    flr_no = int(log_data[4][12:])
+    # based on loor-plan get scene
+    scene = ''
+    if flr_no < 30:
+        scene = "kitchen"
+    elif flr_no < 230:
+        scene = "living room"
+    elif flr_no < 330:
+        scene = "bedroom"
+    else:
+        scene = "bathroom"
 
-import resources.actions as actions
-import resources.robots as robots
+    # 读取 "code_plan.py" 的内容
+    with open(f"{log_path}/code_plan.py", "r", encoding="utf-8") as f:
+        code_plan = f.read()
 
-def LM(prompt, llm_model, llm_version, max_tokens=128, temperature=0, stop=None, logprobs=1, frequency_penalty=0):
-    if llm_model == "gpt":
+    # 读取 "environment_states.json" 的内容
+    with open(f"{log_path}/environment_states.json", "r", encoding="utf-8") as f:
+        environment_states = json.load(f)
 
-        if "gpt" not in llm_model:
-            response = client.completions.create(model=llm_version, 
-                                                prompt=prompt, 
-                                                max_tokens=max_tokens, 
-                                                temperature=temperature, 
-                                                stop=stop, 
-                                                logprobs=logprobs, 
-                                                frequency_penalty = frequency_penalty)
+    # read input train prompts
+    init_prompt_file = open(os.getcwd() + "/data/pythonic_plans/train_replan_initial.py", "r")
+    init_prompt = init_prompt_file.read()
+    init_prompt_file.close()
 
-            return response, response.choices[0].text.strip()
+    # actions
+    ai2thor_actions = ["GoToObject <robot><object>", "OpenObject <robot><object>", "CloseObject <robot><object>", 
+                   "BreakObject <robot><object>", "SliceObject <robot><object>", "SwitchOn <robot><object>", 
+                   "SwitchOff <robot><object>", "CleanObject <robot><object>", "PickupObject <robot><object>", 
+                   "PutObject <robot><object><receptacleObject>", "DropHandObject <robot><object>", 
+                   "ThrowObject <robot><object>", "PushObject <robot><object>", "PullObject <robot><object>"]
+    ai2thor_actions = ', '.join(ai2thor_actions)
 
-        else:
-            response = client.chat.completions.create(model=llm_version, 
-                                                messages=prompt, 
-                                                max_tokens=max_tokens, 
-                                                temperature=temperature, 
-                                                frequency_penalty = frequency_penalty)
-
-            return response, response.choices[0].message.content.strip()
-    elif llm_model == "gemini":
-        response = gemini_client.models.generate_content(
-            model=llm_version,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                max_output_tokens=max_tokens,
-                temperature=temperature,
-                frequency_penalty=frequency_penalty,
-            ))
-        if '```python' in response.text.strip():
-            content = response.text.strip().split('```python')[1].split('```')[0]
-            return response, content.strip()
-        return response, response.text.strip()
-
-def decompose_task(test_tasks, prompt, llm_model, llama_version):
-    decomposed_plan = []
-    for task in test_tasks:
-        curr_prompt =  f"{prompt}\n\n# Task Description: {task}"
-        if llm_model == "gpt":
-            if "gpt" not in llama_version:
-                # older gpt versions
-                _, text = LM(curr_prompt, llm_model, llama_version, max_tokens=1000, stop=["def"], frequency_penalty=0.15)
-            else:            
-                messages = [{"role": "user", "content": curr_prompt}]
-                _, text = LM(messages, llm_model, llama_version, max_tokens=1300, frequency_penalty=0.0)
-        elif llm_model == "gemini":
-            _, text = LM(curr_prompt, llm_model,args.gemini_model, max_tokens=1000, stop=["def"], frequency_penalty=0.15)
-        decomposed_plan.append(text)
-    return decomposed_plan
-
-def allocate_robots(decomposed_plan, prompt, available_robots, objects_ai, llm_model, llama_version):
-    allocated_plan = []
-    for i, plan in enumerate(decomposed_plan):
-        no_robot  = len(available_robots[i])
-        curr_prompt = prompt + plan
-        curr_prompt += f"\n# TASK ALLOCATION"
-        curr_prompt += f"\n# Scenario: There are {no_robot} robots available, The task should be performed using the minimum number of robots necessary. Robots should be assigned to subtasks that match its skills and mass capacity. Using your reasoning come up with a solution to satisfy all contraints."
-        curr_prompt += f"\n\nrobots = {available_robots[i]}"
-        curr_prompt += f"\n{objects_ai}"
-        curr_prompt += f"\n\n# IMPORTANT: The AI should ensure that the robots assigned to the tasks have all the necessary skills to perform the tasks. IMPORTANT: Determine whether the subtasks must be performed sequentially or in parallel, or a combination of both and allocate robots based on availablitiy. "
-        curr_prompt += f"\n# SOLUTION  \n"
-        if llm_model == "gpt":
-            if "gpt" not in llama_version:
-                # older versions of GPT
-                _, text = LM(curr_prompt, llm_model, llama_version, max_tokens=1000, stop=["def"], frequency_penalty=0.65)
-
-            elif "gpt-3.5" in llama_version:
-                # gpt 3.5 and its variants
-                messages = [{"role": "user", "content": curr_prompt}]
-                _, text = LM(messages, llm_model, llama_version, max_tokens=1500, frequency_penalty=0.35)
-
-            else:          
-                # gpt 4.0
-                messages = [{"role": "system", "content": "You are a Robot Task Allocation Expert. Determine whether the subtasks must be performed sequentially or in parallel, or a combination of both based on your reasoning. In the case of Task Allocation based on Robot Skills alone - First check if robot teams are required. Then Ensure that robot skills or robot team skills match the required skills for the subtask when allocating. Make sure that condition is met. In the case of Task Allocation based on Mass alone - First check if robot teams are required. Then Ensure that robot mass capacity or robot team combined mass capacity is greater than or equal to the mass for the object when allocating. Make sure that condition is met. In both the Task Task Allocation based on Mass alone and Task Allocation based on Skill alone, if there are multiple options for allocation, pick the best available option by reasoning to the best of your ability."},{"role": "system", "content": "You are a Robot Task Allocation Expert"},{"role": "user", "content": curr_prompt}]
-                _, text = LM(messages,llm_model, llama_version, max_tokens=400, frequency_penalty=0.69)
-        elif llm_model == "gemini":
-            messages = "You are a Robot Task Allocation Expert. Determine whether the subtasks must be performed sequentially or in parallel, or a combination of both based on your reasoning. In the case of Task Allocation based on Robot Skills alone - First check if robot teams are required. Then Ensure that robot skills or robot team skills match the required skills for the subtask when allocating. Make sure that condition is met. In the case of Task Allocation based on Mass alone - First check if robot teams are required. Then Ensure that robot mass capacity or robot team combined mass capacity is greater than or equal to the mass for the object when allocating. Make sure that condition is met. In both the Task Task Allocation based on Mass alone and Task Allocation based on Skill alone, if there are multiple options for allocation, pick the best available option by reasoning to the best of your ability." + curr_prompt
-            _, text = LM(messages, llm_model, llama_version, max_tokens=1000, stop=["def"], frequency_penalty=0.15)
-
-        allocated_plan.append(text)
-    return allocated_plan
-
-def generate_code(decomposed_plan, allocated_plan, prompt, available_robots, llm_model, llama_version):
-    code_plan = []
-    prompt_file2 = os.getcwd() + "/data/pythonic_plans/train_final_exe_plan.py"
-    final_exe_plan_file = open(prompt_file2, "r")
-    final_exe_plan = final_exe_plan_file.read()
-    final_exe_plan_file.close()
-
-    if llm_model == "gemini":
-        prompt += final_exe_plan
-
-    for i, (plan, solution) in enumerate(zip(decomposed_plan,allocated_plan)):
-        curr_prompt = prompt + plan
-        curr_prompt += f"\n# TASK ALLOCATION"
-        curr_prompt += f"\n\nrobots = {available_robots[i]}"
-        curr_prompt += solution
-        curr_prompt += f"\n# CODE Solution  \n"
-        if llm_model == "gpt":
-            if "gpt" not in llama_version:
-                # older versions of GPT
-                _, text = LM(curr_prompt, llm_model, llama_version, max_tokens=1000, stop=["def"], frequency_penalty=0.30)
-            else:            
-                # using variants of gpt 4 or 3.5
-                messages = [{"role": "system", "content": "You are a Robot Task Allocation Expert"},{"role": "user", "content": curr_prompt}]
-                _, text = LM(messages, llm_model, llama_version, max_tokens=1400, frequency_penalty=0.4)
-        elif llm_model == "gemini":
-            
-            _, text = LM(final_exe_plan+curr_prompt, llm_model, llama_version, max_tokens=1000, stop=["def"], frequency_penalty=0.15)
-
-        code_plan.append(text)
-    return code_plan
-
-def set_api_key(openai_api_key):
-    client.api_key = Path(openai_api_key + '.txt').read_text()
-
-# Function returns object list with name and properties.
-def convert_to_dict_objprop(objs, obj_mass):
-    objs_dict = []
-    for i, obj in enumerate(objs):
-        obj_dict = {'name': obj , 'mass' : obj_mass[i]}
-        # obj_dict = {'name': obj , 'mass' : 1.0}
-        objs_dict.append(obj_dict)
-    return objs_dict
-
-def get_ai2_thor_objects(floor_plan_id):
-    # connector to ai2thor to get object list
-    controller = ai2thor.controller.Controller(scene="FloorPlan"+str(floor_plan_id))
-    obj = list([obj["objectType"] for obj in controller.last_event.metadata["objects"]])
-    obj_mass = list([obj["mass"] for obj in controller.last_event.metadata["objects"]])
-    controller.stop()
-    obj = convert_to_dict_objprop(obj, obj_mass)
-    return obj
-
-def get_args():
-    parser = argparse.ArgumentParser()
-    # parser.add_argument("--floor-plan", type=int, required=True)
-    parser.add_argument("--pre-state", type=str, required=True)
-
-    parser.add_argument("--openai-api-key-file", type=str, default="api_key")
-    parser.add_argument("--gemini-api-key-file", type=str, default="gemini_api_key")
-
-    parser.add_argument("--llm-model", type=str, default="gpt", 
-                        choices=['gpt', 'gemini'])
-    parser.add_argument("--gemini-model", type=str, default="gemini-2.0-flash", 
-                        choices=['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-lite-preview-02-05'])
-    parser.add_argument("--gpt-version", type=str, default="gpt-4", 
-                        choices=['gpt-3.5-turbo', 'gpt-4o-mini', 'gpt-4', 'gpt-3.5-turbo-16k'])
-
-    parser.add_argument("--prompt-decompse-set", type=str, default="train_task_decompose", 
-                        choices=['train_task_decompose'])
-
-    parser.add_argument("--prompt-allocation-set", type=str, default="train_task_allocation", 
-                        choices=['train_task_allocation'])
-
-    parser.add_argument("--test-set", type=str, default="tests", 
-                        choices=['final_test', 'tests'])
-
-    parser.add_argument("--log-results", type=bool, default=True)
-
+    # 组合 prompt
+    prompt = f"""
+    You are an excellent task planner whose task is to help {robot_no} robots to complete the final task of "{task}" in {scene}. 
+    In current stage, the robots in the environment had execute a existing plan. 
+    However, it seems like the task is not yet completed. And your task is to based on previous plan and the information of last executed state to re-generated a new plan for the two robot agents to complete the final task.
     
-    return parser.parse_args()
+    you will be given the following information:
 
-if __name__ == "__main__":
+    ```Original Code Plan``` which is a segment of python code file, this the section that how robot should take actions.
+    And, you will also have following information which is the last executed state```Environment States```, this is a json file that contains the following :  ```agent_info``` which is the information of the robot agents, 
+    ```object_info``` which is the objects list that are available in the environment, 
+    ```reachable_positions``` which is the the position that an agent can reach within the environment, ```obj_changed``` which is the the object that ```agent[i]``` was interacting.
+
+    And you will also have ```ai2thor_actions``` which is the list of actions that an agent can perform. 
+    you will have the information of what task needs to be done, what objects are available in the scene (including the position of the objects)
+
+    """
+
+    prompt += f"""
+    ## Original Code Plan:
+    {code_plan}
+
+    ## Environment States
+    {json.dumps(environment_states, indent=2)}
+
+    ## ai2thor_actions
+    {ai2thor_actions}
+
+    # Task
+    Based on the above code plan and environment states, generate an improved and executable Python script. 
     
-    # Get arguments
-    args = get_args()
+    You should reason over the information above, and generate an improved and executable Python script to complete the final task.
+    Before generating a new plan, write the previous failure reason in comment.
+    Your output should be two part of code, one is the initialization part, and another is code plan part. 
+    For Initialization stage, which should be a segment of python code, starts with ### Initialization Start and ends with ### Initialization End, 
+    this is the section of initialzation the environment, you need to use Teleport to setup agent's position.
+    And redo the previously completed subtasks, such as pickup the specific object using objectID, or Turn on something using objectID. Make sure these are acted by the correct agent.
+    ##Here is an example of Initialization:
+    {init_prompt}
 
-    set_api_key(args.openai_api_key_file)
+    The code plan part should be like the Original Code Plan. The code plan part do not need to redo the previously success subtask. The previously success subtask should be done in the Initialization stage.
+    Your output format should be like:
+    ### Initialization Start
+    code of initialization...
+    ### Initialization End
 
-    if not os.path.isdir(f"./logs/"):
-        os.makedirs(f"./logs/")
+    ### Code Plan Start
+    code plan...
+    ### Code Plan End
 
+    Make sure the output file can successfully execute and stimulate the robot's actions and complete the final task. You should initialize the position of agents based on the ```env_state```.
+    The code plan part no need to verify current state, just think of this is the next step from ```previous plan```.
 
-    final_task = "Turn on Sink faucet and put toilet paper in the trash"
+    * NOTE: DO NOT OUTPUT ANYTHING EXTRA OTHER THAN WHAT HAS BEEN SPECIFIED
+    NOTE: Do not output any other content. DO NOT use markdown format.
+    Let's work this out in a step by step way to be sure we have the right answer.
+
+    """
+    # print('=======')
+    # print(prompt)
+    # print('=======')
     
-    # read the previous environment
-    with open(f"./logs/{args.pre_state}/environment_states.json", "r") as file:
-        data = json.load(file)
+    # 调用 OpenAI API (使用 gpt-4o-mini)
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "system", "content": "You are an expert robot task planner."},
+                  {"role": "user", "content": prompt}],
+        temperature=0.5
+    )
 
-    obj_list = data['object_info']
-    agents = data['agent_info']
-    reachable_positions = data['reachable_positions']
-    obj_changed = data['obj_changed']
-    no_agent = len(agents)
-    agents_actions = actions.ai2thor_actions
-    
-    print('obj_list', obj_list)
-    print('agents', agents)
-    print('reachable_positions', reachable_positions)
-    print('obj_changed', obj_changed)
+    # 提取生成的代码
+    generated_code = response.choices[0].message.content.strip()
 
+    # 输出到 "code_replan.py"
+    with open(f"{log_path}/code_replan.py", "w", encoding="utf-8") as f:
+        f.write(generated_code)
 
-    # read the tasks        
-    # test_tasks = []
-    # robots_test_tasks = []  
-    # gt_test_tasks = []    
-    # trans_cnt_tasks = []
-    # max_trans_cnt_tasks = []  
-    # with open (f"./data/{args.test_set}/FloorPlan{args.floor_plan}.json", "r") as f:
-    #     for line in f.readlines():
-    #         # print(line)
-    #         test_tasks.append(list(json.loads(line).values())[0])
-    #         robots_test_tasks.append(list(json.loads(line).values())[1])
-    #         gt_test_tasks.append(list(json.loads(line).values())[2])
-    #         trans_cnt_tasks.append(list(json.loads(line).values())[3])
-    #         max_trans_cnt_tasks.append(list(json.loads(line).values())[4])
-
-    # print(f"\n----Test set tasks----\n{test_tasks}\nTotal: {len(test_tasks)} tasks\n")
+    return (f"{log_path}/code_replan.py")
 
 
-    # # prepare list of robots for the tasks
-    # available_robots = []
-    # for robots_list in robots_test_tasks:
-    #     task_robots = []
-    #     for i, r_id in enumerate(robots_list):
-    #         rob = robots.robots [r_id-1]
-    #         # rename the robot
-    #         rob['name'] = 'robot' + str(i+1)
-    #         task_robots.append(rob)
-    #     available_robots.append(task_robots)
+parser = argparse.ArgumentParser()
+parser.add_argument("--command", type=str, required=True)
+args = parser.parse_args()
 
-
-    # ######## Train Task Decomposition ########
-
-    # # prepare train decompostion demonstration for ai2thor samples
-    # prompt = f"from skills import " + actions.ai2thor_actions
-    # prompt += f"\nimport time"
-    # prompt += f"\nimport threading"
-    # objects_ai = f"\n\nobjects = {get_ai2_thor_objects(args.floor_plan)}"
-    # prompt += objects_ai
-
-    # # read input train prompts
-    # decompose_prompt_file = open(os.getcwd() + "/data/pythonic_plans/" + args.prompt_decompse_set + ".py", "r")
-    # decompose_prompt = decompose_prompt_file.read()
-    # decompose_prompt_file.close()
-
-    # prompt += "\n\n" + decompose_prompt
-
-    # print ("Generating Decompsed Plans...")
-
-    # if args.llm_model == "gpt":
-    #     decomposed_plan = decompose_task(test_tasks, prompt, args.llm_model, args.gpt_version)
-    # elif args.llm_model == "gemini":
-    #     decomposed_plan = decompose_task(test_tasks, prompt, args.llm_model, args.gemini_model)
-
-    # # print('decomposed_plan  ', decomposed_plan[:100])
-    # print ("Generating Allocation Solution...")
-
-    # ######## Train Task Allocation - SOLUTION ########
-    # prompt = f"from skills import " + actions.ai2thor_actions
-    # prompt += f"\nimport time"
-    # prompt += f"\nimport threading"
-
-    # prompt_file = os.getcwd() + "/data/pythonic_plans/" + args.prompt_allocation_set + "_solution.py"
-    # allocated_prompt_file = open(prompt_file, "r")
-    # allocated_prompt = allocated_prompt_file.read()
-    # allocated_prompt_file.close()
-
-    # prompt += "\n\n" + allocated_prompt + "\n\n"
-    # if args.llm_model == "gpt":
-    #     allocated_plan = allocate_robots(decomposed_plan, prompt, available_robots, objects_ai, args.llm_model, args.gpt_version)
-    # elif args.llm_model == "gemini":
-    #     allocated_plan = allocate_robots(decomposed_plan, prompt, available_robots, objects_ai, args.llm_model, args.gemini_model)
-
-    # print ("Generating Allocated Code...")
-
-    # ######## Train Task Allocation - CODE Solution ########
-
-    # prompt = f"from skills import " + actions.ai2thor_actions
-    # prompt += f"\nimport time"
-    # prompt += f"\nimport threading"
-    # prompt += objects_ai
-
-    # prompt_file1 = os.getcwd() + "/data/pythonic_plans/" + args.prompt_allocation_set + "_code.py"
-    # code_prompt_file = open(prompt_file1, "r")
-    # code_prompt = code_prompt_file.read()
-    # code_prompt_file.close()
-
-    # prompt += "\n\n" + code_prompt + "\n\n"
-    # if args.llm_model == "gpt": 
-    #     code_plan = generate_code(decomposed_plan, allocated_plan, prompt, available_robots, args.llm_model, args.gpt_version)
-    # elif args.llm_model == "gemini":
-    #     code_plan = generate_code(decomposed_plan, allocated_plan, prompt, available_robots, args.llm_model, args.gemini_model)
-
-
-    # print("Storing generated plans...")
-    # # save generated plan
-    # exec_folders = []
-    # if args.log_results:
-    #     line = {}
-    #     now = datetime.now() # current date and time
-    #     date_time = now.strftime("%m-%d-%Y-%H-%M-%S")
-
-    #     for idx, task in enumerate(test_tasks):
-    #         task_name = "{fxn}".format(fxn = '_'.join(task.split(' ')))
-    #         task_name = task_name.replace('\n','')
-    #         folder_name = f"{task_name}_plans_{args.llm_model}_{args.gpt_version}_{date_time}"
-    #         exec_folders.append(folder_name)
-
-    #         os.mkdir("./logs/"+folder_name)
-    #         print(f'start storing {task}')
-    #         with open(f"./logs/{folder_name}/log.txt", 'w') as f:
-    #             f.write(task)
-    #             f.write(f"\n\nGPT Version: {args.gpt_version}")
-    #             f.write(f"\n\nFloor Plan: {args.floor_plan}")
-    #             f.write(f"\n{objects_ai}")
-    #             f.write(f"\nrobots = {available_robots[idx]}")
-    #             f.write(f"\nground_truth = {gt_test_tasks[idx]}")
-    #             f.write(f"\ntrans = {trans_cnt_tasks[idx]}")
-    #             f.write(f"\nmax_trans = {max_trans_cnt_tasks[idx]}")
-
-    #         with open(f"./logs/{folder_name}/decomposed_plan.py", 'w') as d:
-    #             d.write(decomposed_plan[idx])
-
-    #         with open(f"./logs/{folder_name}/allocated_plan.py", 'w') as a:
-    #             a.write(allocated_plan[idx])
-
-    #         with open(f"./logs/{folder_name}/code_plan.py", 'w') as x:
-    #             x.write(code_plan[idx])
-
-    #         print(f'{task} Plan Stored at "./logs/{folder_name}"')
+expt_name = args.command
+ai_exec_file = replan_code_file(expt_name)
+print('Finished')
+# subprocess.run(["python", ai_exec_file])
