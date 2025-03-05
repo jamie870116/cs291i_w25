@@ -20,7 +20,7 @@ llm_args = {
     "log_results": True
 }
 
-client = openai.OpenAI(api_key=Path('api_key.txt').read_text())  # New API format requires creating a client instance
+client = openai.OpenAI(api_key=Path('api_key.txt').read_text())
 
 def call_gpt_fix(error_message, file_path):
     print("Calling GPT-4o-mini to fix the syntax error...")
@@ -29,7 +29,7 @@ def call_gpt_fix(error_message, file_path):
         file_content = f.read()
     
     response = client.chat.completions.create(
-        model="gpt-4o-mini",  # Use "gpt-4o" (not "gpt-4o-mini", as "mini" is not a valid model name)
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are an AI assistant robotic developer that fix syntax error by give people the entire code piece after fix without saying anything else"},
             {"role": "user", "content": f"Here is a Python script with a syntax error:\n\n{file_content}\n\nThe error message is: {error_message}\n\nPlease correct the syntax and provide the entire code piece that resolves the error, don't explain anything else, just give me the code."}
@@ -69,7 +69,7 @@ def clean_python_code(input_file, output_file):
         f.write(content)
 
 def verify_plan(command_folder):
-    # 检查环境状态是否符合预期
+    # verify if the task is completed
     log_file = open(f"./logs/{command_folder}" + "/log.txt")
     log_data = log_file.readlines()
     task = log_data[0]
@@ -77,14 +77,14 @@ def verify_plan(command_folder):
 
     
     if not os.path.exists(f"./logs/{command_folder}/environment_states.json"):
-        # 如果环境状态文件不存在，则认为计划未完成
+        # if the environment state file does not exist, meaning the task is not completed with unknown reason
         result = {
             'isComplete': False,
             'failure_reason': "Unknown",
             'completed_tasks': [],
             'remaining_tasks': ['"Nothing is completed"'],
             }
-        return "Nothing is completed"
+        return result
     else:
         with open(f"./logs/{command_folder}/environment_states.json", "r", encoding="utf-8") as f:
             environment_states = json.load(f)
@@ -148,16 +148,19 @@ def verify_plan(command_folder):
 
 def main():
     '''
-    1. 呼叫 LLM 產生計畫 (run_llm_main)。
-    2. 嘗試執行每個計畫：
-        執行 execute_plan_main()，然後清理代碼。
-        嘗試執行 executable_plan.py 如果有語法錯誤 則修復並重試。
-    3. 檢查計畫執行結果 (verify_plan)
-        如果成功，則結束。
-        如果失敗，根據 failure_reason 來決定是否重新規劃 (replan_main)。
-    4. 重新執行修正後的計畫：
-        執行 execute_plan_main()，然後再次檢查 verify_plan()。
+    work flow:
+    1. generate plan (run_llm_main)。
+    2. attemp to execute the plan:
+        run execute_plan_main(), clean up
+        run generated executable_plan.py; if there is a syntax error, call call_gpt_fix to fix it.
+    3. run verify_plan to check if the task is completed:
+        if success, end.
+        if failed, based on failure_reason to run replan_main
+    4. execute the replaned plan:
+        run execute_plan_main(replan=True)
+    5. run verify_plan again to check if the task is completed:
     '''
+    # step 1.
     exec_folders = run_llm_main(llm_args)
 
     if exec_folders and len(exec_folders) > 0:
@@ -175,15 +178,15 @@ def main():
                 "command": command_folder,
                 "replan": True
             }
-
+            # step 2.
             # Run functions synchronously
-            exe_path = execute_plan_main(execute_plan_args)  # Step 2
+            exe_path = execute_plan_main(execute_plan_args)  
         
             executable_plan_path = f"./logs/{command_folder}/executable_plan.py"
 
             clean_python_code(executable_plan_path, executable_plan_path)
                 
-            # check if there is a syntax error
+            # step3. check if there is a syntax error
             try:
                 # Run the executable_plan.py inside the command folder
                 subprocess.run(["python", executable_plan_path], check=True)
@@ -202,7 +205,7 @@ def main():
                     print(f"Non-syntax error encountered in {executable_plan_path}: {e}")
                         
 
-            # verify whether the task is completed
+            # step 4.verify whether the task is completed
             verify_result = verify_plan(command_folder)
             if verify_result["isComplete"]:
                 print("Task completed successfully")
@@ -216,7 +219,7 @@ def main():
                         replan_path = replan_main(replan_args, verify_result)
                         exe_path = execute_plan_main(replan_args)
                         subprocess.run(["python", exe_path], check=True)
-                        # verify the task again
+                        # step 5. verify the task again
                         verify_result = verify_plan(command_folder)
                         if verify_result["isComplete"]:
                             print("Task completed successfully")
@@ -226,7 +229,8 @@ def main():
                     except Exception as e:
                         print(f"Error in replan: {e}")
             # print(response)
-
+    else:
+        print("No plan generated")
             
 if __name__ == "__main__":
     main()
