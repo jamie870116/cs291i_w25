@@ -147,6 +147,17 @@ def verify_plan(command_folder):
 
 
 def main():
+    '''
+    1. 呼叫 LLM 產生計畫 (run_llm_main)。
+    2. 嘗試執行每個計畫：
+        執行 execute_plan_main()，然後清理代碼。
+        嘗試執行 executable_plan.py 如果有語法錯誤 則修復並重試。
+    3. 檢查計畫執行結果 (verify_plan)
+        如果成功，則結束。
+        如果失敗，根據 failure_reason 來決定是否重新規劃 (replan_main)。
+    4. 重新執行修正後的計畫：
+        執行 execute_plan_main()，然後再次檢查 verify_plan()。
+    '''
     exec_folders = run_llm_main(llm_args)
 
     if exec_folders and len(exec_folders) > 0:
