@@ -13,11 +13,11 @@ from openai import OpenAI
 client = OpenAI(api_key=Path('api_key.txt').read_text())
 import ai2thor.controller
 
-# from google import genai
-# from google.genai import types
+from google import genai
+from google.genai import types
 
-# # genai.configure(api_key=Path('gemini_api_key.txt').read_text())
-# gemini_client = genai.Client(api_key=Path('gemini_api_key.txt').read_text())
+# genai.configure(api_key=Path('gemini_api_key.txt').read_text())
+gemini_client = genai.Client(api_key=Path('gemini_api_key.txt').read_text())
 
 import sys
 sys.path.append(".")
@@ -189,7 +189,6 @@ def get_args():
 
 
 def run_llm_main(args):
-    
     set_api_key(args["openai_api_key_file"])
 
     if not os.path.isdir(f"./logs/"):
@@ -201,7 +200,7 @@ def run_llm_main(args):
     gt_test_tasks = []    
     trans_cnt_tasks = []
     max_trans_cnt_tasks = []  
-    with open (f"./data/{args["test_set"]}/FloorPlan{args["floor_plan"]}.json", "r") as f:
+    with open (f"./data/{args['test_set']}/FloorPlan{args['floor_plan']}.json", "r") as f:
         for line in f.readlines():
             # print(line)
             test_tasks.append(list(json.loads(line).values())[0])
@@ -229,7 +228,7 @@ def run_llm_main(args):
     prompt = f"from skills import " + actions.ai2thor_actions
     prompt += f"\nimport time"
     prompt += f"\nimport threading"
-    objects_ai = f"\n\nobjects = {get_ai2_thor_objects(args["floor_plan"])}"
+    objects_ai = f"\n\nobjects = {get_ai2_thor_objects(args['floor_plan'])}"
     prompt += objects_ai
 
     # read input train prompts
@@ -297,15 +296,15 @@ def run_llm_main(args):
         for idx, task in enumerate(test_tasks):
             task_name = "{fxn}".format(fxn = '_'.join(task.split(' ')))
             task_name = task_name.replace('\n','')
-            folder_name = f"{task_name}_plans_{args["llm_model"]}_{args["gpt_version"]}_{date_time}"
+            folder_name = f"{task_name}_plans_{args['llm_model']}_{args['gpt_version']}_{date_time}"
             exec_folders.append(folder_name)
 
             os.mkdir("./logs/"+folder_name)
             print(f'start storing {task}')
             with open(f"./logs/{folder_name}/log.txt", 'w') as f:
                 f.write(task)
-                f.write(f"\n\nGPT Version: {args["gpt_version"]}")
-                f.write(f"\n\nFloor Plan: {args["floor_plan"]}")
+                f.write(f"\n\nGPT Version: {args['gpt_version']}")
+                f.write(f"\n\nFloor Plan: {args['floor_plan']}")
                 f.write(f"\n{objects_ai}")
                 f.write(f"\nrobots = {available_robots[idx]}")
                 f.write(f"\nground_truth = {gt_test_tasks[idx]}")

@@ -159,9 +159,9 @@ for obj in event.metadata['objects']:
                     "isToggled": obj.get("isToggled", False),
                     "isBroken": obj.get("isBroken", False),
                     "isFilledWithLiquid": obj.get("isFilledWithLiquid", False),
-                    "mass": obj.get("mass", 0.0),
+                    'contains': obj.get("receptacleObjectIds", None),
                     "center": obj.get("axisAlignedBoundingBox", {}).get("center", None),
-                    "state": obj.get("state", "None")
+                    "size": obj.get("axisAlignedBoundingBox", {}).get("size", None),
                 }
     object_info[obj['name']] = cur_obj
     if obj['isPickedUp'] or obj['isToggled']:

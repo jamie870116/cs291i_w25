@@ -4,3 +4,4 @@ gemini_api_key.txt
 llama_api_key.txt
 
 logs/*
+success_tasks/*

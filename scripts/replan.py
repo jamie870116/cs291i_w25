@@ -35,8 +35,11 @@ def replan_code_file(expt_name, client=client, prev_error=None):
         code_plan = f.read()
 
     # 读取 "environment_states.json" 的内容
-    with open(f"{log_path}/environment_states.json", "r", encoding="utf-8") as f:
-        environment_states = json.load(f)
+    if not os.path.exists(f"{log_path}/environment_states.json"):
+        environment_states = None
+    else:
+        with open(f"{log_path}/environment_states.json", "r", encoding="utf-8") as f:
+            environment_states = json.load(f)
 
     # read input train prompts
     init_prompt_file = open(os.getcwd() + "/data/pythonic_plans/train_replan_initial.py", "r")
@@ -92,7 +95,7 @@ def replan_code_file(expt_name, client=client, prev_error=None):
     ## Original Code Plan:
     {code_plan}
 
-    ## Environment States
+    ## Environment States, this will only be provided if previous plan is executed but failed.
     {json.dumps(environment_states, indent=2)}
 
     ## ai2thor_actions for code plan
@@ -126,7 +129,7 @@ def replan_code_file(expt_name, client=client, prev_error=None):
     Make sure the output file can successfully execute and stimulate the robot's actions and complete the final task. You should initialize the position of agents based on the ```env_state```.
     The code plan part no need to verify current state, just think of this is the next step from ```previous plan```.
     Make sure the type of the object is exist in ```object_info```. Sometimes the object name is not correct in Original Code Plan, which is one of the reason of failure.
-
+    If the previous plan is not executed, you should not provide any initialization code, only code plan part.
     * NOTE: DO NOT OUTPUT ANYTHING EXTRA OTHER THAN WHAT HAS BEEN SPECIFIED
     NOTE: Do not output any other content. DO NOT use markdown format.
     Let's work this out in a step by step way to be sure we have the right answer.
@@ -137,9 +140,9 @@ def replan_code_file(expt_name, client=client, prev_error=None):
         ## Previous Error:
         {prev_error}
         """
-        
+
     print('=======')
-    print(prompt)
+    # print(prompt)
     print('=======')
     
     # 调用 OpenAI API (使用 gpt-4o-mini)
@@ -164,6 +167,7 @@ def replan_main(args, prev_error):
     expt_name = args["command"]
     ai_exec_file = replan_code_file(expt_name, client, prev_error)
     print('Finished')
+    return ai_exec_file
 
 
 # parser = argparse.ArgumentParser()

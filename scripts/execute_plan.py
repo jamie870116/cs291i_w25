@@ -104,6 +104,7 @@ def execute_plan_main(args):
     else:
         ai_exec_file = compile_aithor_exec_file(expt_name, False)
     print('Finished')
+    return ai_exec_file
 
 
 # parser = argparse.ArgumentParser()
