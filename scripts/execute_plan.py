@@ -105,13 +105,11 @@ def execute_plan_main(args):
         ai_exec_file = compile_aithor_exec_file(expt_name, False)
     print('Finished')
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--command", type=str, required=True)
-parser.add_argument("--replan", action="store_true")
-args = parser.parse_args()
 
-expt_name = args.command
-print ('Run ', expt_name)
-ai_exec_file = compile_aithor_exec_file(expt_name, args.replan)
-print('Finished')
-# subprocess.run(["python", ai_exec_file])
+# parser = argparse.ArgumentParser()
+# parser.add_argument("--command", type=str, required=True)
+# parser.add_argument("--replan", action="store_true")
+# args = parser.parse_args()
+
+# command
+# replanwe

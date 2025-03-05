@@ -1,3 +1,9 @@
+# These examples are not correct ways of the function call to GoToObjects and PickupObject, please make sure the number of arguments match definition of the function for them \
+# Fix TypeError by ensuring robot is passed as a dictionary instead of a string.
+# Fix ZeroDivisionError by preventing division when total_exec == 0.
+# Ensure thread safety by handling possible exceptions in turn_on_sink_faucet and put_toilet_paper_in_trash.
+
+# Also please don't produce explaination, just give me the code
 # EXAMPLE 1 - Task Description: Wash the fork. 
 # GENERAL TASK DECOMPOSITION
 # Independent subtasks:
