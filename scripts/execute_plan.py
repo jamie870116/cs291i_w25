@@ -25,7 +25,7 @@ def split_script(text):
 
     return result
 
-def compile_aithor_exec_file(expt_name, replan=False):
+def compile_aithor_exec_file(expt_name, replan=False, idx=0):
     log_path = os.getcwd() + "/logs/" + expt_name
     
     executable_plan = ""
@@ -70,7 +70,7 @@ def compile_aithor_exec_file(expt_name, replan=False):
         executable_plan += (connector_env_file + "\n")
         
         # get the replan plan
-        allocated_plan = Path(log_path + "/code_replan.py").read_text()
+        allocated_plan = Path(log_path + f"/code_replan_{idx}.py").read_text()
         segments = split_script(allocated_plan)
         brks = append_trans_ctr(segments[1])
         # append the initialization part
@@ -87,7 +87,7 @@ def compile_aithor_exec_file(expt_name, replan=False):
         
     file_name= ''
     if replan:
-        file_name = 're_executable_plan.py'
+        file_name = f're_executable_plan_{idx}.py'
     else:
         file_name = 'executable_plan.py'
         
@@ -96,13 +96,13 @@ def compile_aithor_exec_file(expt_name, replan=False):
         
     return (f"{log_path}/{file_name}")
 
-def execute_plan_main(args):
+def execute_plan_main(args, idx=0):
     expt_name = args["command"]
     print('Run ', expt_name)
     if args["replan"]:
-        ai_exec_file = compile_aithor_exec_file(expt_name, args["replan"])
+        ai_exec_file = compile_aithor_exec_file(expt_name, args["replan"], idx)
     else:
-        ai_exec_file = compile_aithor_exec_file(expt_name, False)
+        ai_exec_file = compile_aithor_exec_file(expt_name, False, idx)
     print('Finished')
     return ai_exec_file
 

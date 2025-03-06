@@ -7,7 +7,7 @@ from openai import OpenAI
 
 client = OpenAI(api_key=Path('api_key.txt').read_text())
 
-def replan_code_file(expt_name, client=client, prev_error=None, prev_code_file=None):
+def replan_code_file(expt_name, idx, client=client, prev_error=None, prev_code_file=None):
     log_path = os.getcwd() + "/logs/" + expt_name
 
     log_file = open(log_path + "/log.txt")
@@ -158,15 +158,15 @@ def replan_code_file(expt_name, client=client, prev_error=None, prev_code_file=N
     generated_code = response.choices[0].message.content.strip()
 
     # 输出到 "code_replan.py"
-    with open(f"{log_path}/code_replan.py", "w", encoding="utf-8") as f:
+    with open(f"{log_path}/code_replan_{idx}.py", "w", encoding="utf-8") as f:
         f.write(generated_code)
 
-    return (f"{log_path}/code_replan.py")
+    return (f"{log_path}/code_replan_{idx}.py")
 
-def replan_main(args, prev_error, prev_code_file=None):
+def replan_main(args, prev_error, idx, prev_code_file=None):
     client = OpenAI(api_key=Path('api_key.txt').read_text())
     expt_name = args["command"]
-    ai_exec_file = replan_code_file(expt_name, client, prev_error, prev_code_file)
+    ai_exec_file = replan_code_file(expt_name, idx, client, prev_error, prev_code_file)
     print('Finished')
     return ai_exec_file
 

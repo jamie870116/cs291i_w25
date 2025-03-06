@@ -73,8 +73,8 @@ def verify_plan(command_folder):
     log_file = open(f"./logs/{command_folder}" + "/log.txt")
     log_data = log_file.readlines()
     task = log_data[0]
-    ground_truth = log_data[9]
-
+    verify_gt = log_data[10]
+    gt = log_data[9]
     
     if not os.path.exists(f"./logs/{command_folder}/environment_states.json"):
         # if the environment state file does not exist, meaning the task is not completed with unknown reason
@@ -89,6 +89,8 @@ def verify_plan(command_folder):
         with open(f"./logs/{command_folder}/environment_states.json", "r", encoding="utf-8") as f:
             environment_states = json.load(f)
     
+
+
     prompt = f"""
         you are a task planning expert. Your task is to verify if the task is completed or not. You will be given '''task''' which is the final goal, '''environment state''' which is the current state of environment, and '''ground truth''' which is the ground truth you should check in environment.
     
@@ -112,7 +114,7 @@ def verify_plan(command_folder):
         {task}
 
         ### ground truth
-        {ground_truth}
+        {verify_gt}
 
         ### environment state
         {environment_states}
@@ -120,7 +122,7 @@ def verify_plan(command_folder):
         You should reason over the above information,
         and tell me if the task is complete or not, if not, tell me what is completed and what was not. 
         You should not depend purely on the '''ground truth''' to decide if the task is complete or not, 
-        because the gound truth only show the type of objects, it didnot specify the object id, meaning not specific object need to be activated.
+        because the gound truth only show the type of objects, it did not specify the object id, meaning not specific object need to be activated.
         There might be multiple same type of objects in the environment, be tolerant.
 
         your output should be in the following format in dictionary:
@@ -162,7 +164,7 @@ def main():
     '''
     # step 1.
     exec_folders = run_llm_main(llm_args)
-
+    max_attempt = 2
     if exec_folders and len(exec_folders) > 0:
         for i in range(len(exec_folders)):
             print("="*10)
@@ -201,6 +203,7 @@ def main():
                         clean_python_code(fixed_file_path, executable_plan_path)
                         print("Retrying execution after fixing syntax errors...")
                         # TODO: seems no retry code here? just did some format convert.
+                        
                     else:
                         print(f"Non-syntax error encountered in {executable_plan_path}: {e}")
             else:
@@ -210,14 +213,14 @@ def main():
 
             # step 4.verify whether the task is completed
             replan_path = None
-            for _ in range(3):
-                print("Verify if the task was successful?")
+            for i in range(max_attempt):
+                print(f"Attempt {i+1} of {max_attempt}: Verify if the task was successful?")
                 verify_result = verify_plan(command_folder)
                 if verify_result["isComplete"]:
                     print("Task completed successfully")
                     break
                 else:
-                    print("Verification result: Task failed.")
+                    print("Verification result: Task failed. Reason: ", verify_result['failure_reason'])
                     if verify_result['failure_reason'] == "Unknown":
                         print("Task failed, reason:", verify_result['failure_reason'], "cannot replan. End.")
                         break
@@ -225,8 +228,8 @@ def main():
                         # replan based on the failure reason, and execute the plan again from previous step
                         print("==start to replan==")
                         try:
-                            replan_path = replan_main(replan_args, verify_result, replan_path)
-                            exe_path = execute_plan_main(replan_args)
+                            replan_path = replan_main(replan_args, verify_result, i, replan_path)
+                            exe_path = execute_plan_main(replan_args, i)
                             subprocess.run(["python", exe_path], check=True)
                             # step 5. verify the task again
                             verify_result = verify_plan(command_folder)
@@ -239,7 +242,7 @@ def main():
                         except Exception as e:
                             print(f"Error in replan: {e}")
             else:
-                print("replan for 3 times. Failed.")
+                print(f"replan for max_attempt {max_attempt} times. Failed.")
     else:
         print("No plan generated")
             

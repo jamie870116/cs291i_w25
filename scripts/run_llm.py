@@ -200,6 +200,7 @@ def run_llm_main(args):
     gt_test_tasks = []    
     trans_cnt_tasks = []
     max_trans_cnt_tasks = []  
+    verify_test_tasks = []
     with open (f"./data/{args['test_set']}/FloorPlan{args['floor_plan']}.json", "r") as f:
         for line in f.readlines():
             # print(line)
@@ -208,7 +209,7 @@ def run_llm_main(args):
             gt_test_tasks.append(list(json.loads(line).values())[2])
             trans_cnt_tasks.append(list(json.loads(line).values())[3])
             max_trans_cnt_tasks.append(list(json.loads(line).values())[4])
-
+            verify_test_tasks.append(list(json.loads(line).values())[5])
     print(f"\n----Test set tasks----\n{test_tasks}\nTotal: {len(test_tasks)} tasks\n")
     # prepare list of robots for the tasks
     available_robots = []
@@ -310,6 +311,7 @@ def run_llm_main(args):
                 f.write(f"\nground_truth = {gt_test_tasks[idx]}")
                 f.write(f"\ntrans = {trans_cnt_tasks[idx]}")
                 f.write(f"\nmax_trans = {max_trans_cnt_tasks[idx]}")
+                f.write(f"\nverify_ground_truth = {verify_test_tasks[idx]}")
 
             with open(f"./logs/{folder_name}/decomposed_plan.py", 'w') as d:
                 d.write(decomposed_plan[idx])
@@ -339,6 +341,7 @@ if __name__ == "__main__":
     gt_test_tasks = []    
     trans_cnt_tasks = []
     max_trans_cnt_tasks = []  
+    verify_test_tasks = []
     with open (f"./data/{args.test_set}/FloorPlan{args.floor_plan}.json", "r") as f:
         for line in f.readlines():
             # print(line)
@@ -347,7 +350,7 @@ if __name__ == "__main__":
             gt_test_tasks.append(list(json.loads(line).values())[2])
             trans_cnt_tasks.append(list(json.loads(line).values())[3])
             max_trans_cnt_tasks.append(list(json.loads(line).values())[4])
-
+            verify_test_tasks.append(list(json.loads(line).values())[5])
     print(f"\n----Test set tasks----\n{test_tasks}\nTotal: {len(test_tasks)} tasks\n")
     # prepare list of robots for the tasks
     available_robots = []
@@ -449,7 +452,7 @@ if __name__ == "__main__":
                 f.write(f"\nground_truth = {gt_test_tasks[idx]}")
                 f.write(f"\ntrans = {trans_cnt_tasks[idx]}")
                 f.write(f"\nmax_trans = {max_trans_cnt_tasks[idx]}")
-
+                f.write(f"\nverify_ground_truth = {verify_test_tasks[idx]}")
             with open(f"./logs/{folder_name}/decomposed_plan.py", 'w') as d:
                 d.write(decomposed_plan[idx])
 
