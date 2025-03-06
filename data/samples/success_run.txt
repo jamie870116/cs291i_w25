@@ -1,0 +1,53 @@
+(smartllm) (base) apple@169-231-62-208 SMART-LLM-master % /opt/anaconda3/envs/smartllm/bin/python "/Users/apple/Desktop/UCSB/CS291I win25/SMART-
+LLM-master/scripts/ai2thorCorr_main.py"
+
+----Test set tasks----
+['Turn on Sink faucet and put toilet paper in the trash']
+Total: 1 tasks
+
+Generating Decompsed Plans...
+Generating Allocation Solution...
+Generating Allocated Code...
+Storing generated plans...
+start storing Turn on Sink faucet and put toilet paper in the trash
+Turn on Sink faucet and put toilet paper in the trash Plan Stored at "./logs/Turn_on_Sink_faucet_and_put_toilet_paper_in_the_trash_plans_gpt_gpt-4o-mini_03-06-2025-00-32-55"
+==========
+Running experiment 1: Turn_on_Sink_faucet_and_put_toilet_paper_in_the_trash_plans_gpt_gpt-4o-mini_03-06-2025-00-32-55
+Run  Turn_on_Sink_faucet_and_put_toilet_paper_in_the_trash_plans_gpt_gpt-4o-mini_03-06-2025-00-32-55
+No Breaks:  1
+Finished
+Going to  Sink|-02.72|+00.86|+02.23 {'x': -2.648437023162842, 'y': 0.9443130493164062, 'z': 2.2319998741149902}
+Going to  ToiletPaper|-02.93|+01.20|+01.46 {'x': -2.927177667617798, 'y': 1.2567285299301147, 'z': 1.4589654207229614}
+Reached:  Sink
+Switching On:  Faucet
+Going to  Faucet|-02.93|+00.98|+02.23 {'x': -2.93, 'y': 0.98, 'z': 2.23}
+Reached:  Faucet|-02.93|+00.98|+02.23
+Reached:  ToiletPaper
+PIcking:  ToiletPaper
+Picking Up  ToiletPaper|-02.93|+01.20|+01.46 {'x': -2.927177667617798, 'y': 1.2567285299301147, 'z': 1.4589654207229614}
+Going to  GarbageCan|-00.40|-00.03|+00.24 {'x': -0.4102923274040222, 'y': 0.29078996181488037, 'z': 0.24096132814884186}
+Reached:  GarbageCan
+[{'name': 'Faucet', 'contains': [], 'state': 'Toggled'}, {'name': 'GarbageCan ', 'contains': ['ToiletPaper'], 'state': 'contains'}]
+1 1 1
+SR:0, TC:0, GCR:0.0, Exec:1.0, RU:1
+Execute success.
+Attempt 1 of 2: Verify if the task was successful?
+gt is:
+ground_truth = [{'name': 'Faucet', 'contains': [], 'state': 'Toggled'}, {'name': 'GarbageCan ', 'contains': ['ToiletPaper'], 'state': 'contains'}]
+
+Verification result: Task failed. Reason:  The sink faucet is toggled on, but the task also requires that toilet paper is put in the trash, which involves checking if there is toilet paper contained in the trash, and it is confirmed that it is indeed there in the garbage can.
+==start to replan==
+Finished
+Run  Turn_on_Sink_faucet_and_put_toilet_paper_in_the_trash_plans_gpt_gpt-4o-mini_03-06-2025-00-32-55
+No Breaks:  1
+Finished
+Going to  GarbageCan|-00.40|-00.03|+00.24 {'x': -0.41029027104377747, 'y': 0.29078954458236694, 'z': 0.240960031747818}
+Reached:  GarbageCan
+[{'name': 'Faucet', 'contains': [], 'state': 'Toggled'}, {'name': 'GarbageCan ', 'contains': ['ToiletPaper'], 'state': 'contains'}]
+1 1 1
+SR:0, TC:0, GCR:0.0, Exec:1.0, RU:1
+Attempt 2 of 2: Verify if the task was successful?
+gt is:
+ground_truth = [{'name': 'Faucet', 'contains': [], 'state': 'Toggled'}, {'name': 'GarbageCan ', 'contains': ['ToiletPaper'], 'state': 'contains'}]
+
+Task completed successfully

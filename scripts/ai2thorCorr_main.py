@@ -79,12 +79,13 @@ def verify_plan(command_folder):
     log_file = open(f"./logs/{command_folder}" + "/log.txt")
     log_data = log_file.readlines()
     task = log_data[0]
-    verify_gt = log_data[9]
-    print("verify_gt is:")
-    print(verify_gt)
+    # verify_gt = log_data[10]
+    # print("verify_gt is:")
+    # print(verify_gt)
     
     gt = log_data[9]
-    
+    print("gt is:")
+    print(gt)
     if not os.path.exists(f"./logs/{command_folder}/environment_states.json"):
         # if the environment state file does not exist, meaning the task is not completed with unknown reason
         result = {
@@ -98,7 +99,7 @@ def verify_plan(command_folder):
         with open(f"./logs/{command_folder}/environment_states.json", "r", encoding="utf-8") as f:
             environment_states = json.load(f)
     
-    print(environment_states["object_info"]["GarbageCan_d3abea71"])
+    # print(environment_states["object_info"]["GarbageCan_d3abea71"])
     
 
 
@@ -124,25 +125,33 @@ def verify_plan(command_folder):
         ###task:
         {task}
 
-        ### ground truth
-        {verify_gt}
+        ### ground truth: this is a list of items you need to check in the environment, do not check other items if not specified in the ground truth.
+        {gt}
 
         ### environment state
-        {environment_states["object_info"]["GarbageCan_d3abea71"]}
+        {environment_states}
         
         You should reason over the above information,
         and tell me if the task is complete or not, if not, tell me what is completed and what was not. 
-        You should not depend purely on the '''ground truth''' to decide if the task is complete or not.
+        
 
         ### Task Completion Evaluation Criteria:
+        you are given the '''ground truth''' and '''environment state'''. If the 'state' of each object in '''ground truth''' is the following:
+        - contains: check If the 'state' of an object in ground truth is "contains", check if any object of the specified type exists within the 'contains' field of the environment object. Partial matches are acceptable.
 
-        - check if the 'contains' field of the object that contains the same element of the ground truth element
+        * Note: gound truth only show the type of objects, while environment state using object id. This meaning not specific object need to be activated.
+        There might be multiple same type of objects in the environment, be tolerant. If at least one object of the same type satisfy the ground truth condition, then the subtask is completed.
+        Noticed that '''ground truth''' and '''environment state''' might have different naming. For example, state of object in ground truth is Toggled, means that the isToggled field of the object in environment state is true.
+        Please be tolerent and some of Criteria is given to you in above.
+        If you are not sure whether object A contains object B, first check the contains list. If absent, verify if B's position is inside A’s bounding box (size + position tolerance).
+
 
         your output should be in the following format in dictionary:
         ## Output Format
         {{
         "isComplete": bool,
         "failure_reason": str of reason why the task is failed,
+        "according": str of reason why you determine the task is completed or not,
         "completed_tasks": ['list of completed item', empty list if none],
         "remaining_tasks": ['list of completed item', empty list if none],
         }}
@@ -159,6 +168,7 @@ def verify_plan(command_folder):
     response = response.choices[0].message.content
     response = json.loads(response)
     return response
+    
 
 
 def main():
@@ -175,120 +185,111 @@ def main():
         run execute_plan_main(replan=True)
     5. run verify_plan again to check if the task is completed:
     '''
-    command_folder = "Turn_on_Sink_faucet_and_put_toilet_paper_in_the_trash_plans_gpt_gpt-4o-mini_03-06-2025-01-09-23"
-    verify_result = verify_plan(command_folder)
-    print(verify_result)
+    # command_folder = "Turn_on_Sink_faucet_and_put_toilet_paper_in_the_trash_plans_gpt_gpt-4o-mini_03-05-2025-18-48-47"
+    # verify_result = verify_plan(command_folder)
+    # print(verify_result)
     # step 1.
-#     exec_folders = run_llm_main(llm_args)
-#     max_attempt = 2
-#     if exec_folders and len(exec_folders) > 0:
-#         for i in range(len(exec_folders)):
-#             print("="*10)
-#             print(f"Running experiment {i+1}: {exec_folders[i]}")
-#             command_folder = exec_folders[i]
+    exec_folders = run_llm_main(llm_args)
+    max_attempt = 2
+    if exec_folders and len(exec_folders) > 0:
+        for i in range(len(exec_folders)):
+            print("="*10)
+            print(f"Running experiment {i+1}: {exec_folders[i]}")
+            command_folder = exec_folders[i]
 
-#             execute_plan_args = {
-#                 "command": command_folder,
-#                 "replan": False
-#             }
+            execute_plan_args = {
+                "command": command_folder,
+                "replan": False
+            }
 
-#             replan_args = {
-#                 "command": command_folder,
-#                 "replan": True
-#             }
-#             # step 2.
-#             # Run functions synchronously
-#             for _ in range(max_attempt):
-#                 exe_path = execute_plan_main(execute_plan_args)
+            replan_args = {
+                "command": command_folder,
+                "replan": True
+            }
+            # step 2.
+            # Run functions synchronously
+            for _ in range(max_attempt):
+                exe_path = execute_plan_main(execute_plan_args)
 
-#                 executable_plan_path = f"./logs/{command_folder}/executable_plan.py"
+                executable_plan_path = f"./logs/{command_folder}/executable_plan.py"
 
-#                 clean_python_code(executable_plan_path, executable_plan_path)
+                clean_python_code(executable_plan_path, executable_plan_path)
 
-#                 # step3. check if there is a syntax error
-#                 try:
-#                     # Run the executable_plan.py inside the command folder
-#                     subprocess.run(["python", executable_plan_path], check=True)
-#                     print("Execute success.")
-#                     break
-#                 except subprocess.CalledProcessError as e:
-#                     error_message = e.stderr if e.stderr else str(e)
-#                     print(f"Error executing {executable_plan_path}: {e}")
-#                     fixed_file_path = call_gpt_fix(str(e), executable_plan_path)
-#                     clean_python_code(fixed_file_path, executable_plan_path)
-#                     print("Retrying execution after fixing syntax errors...")
-#                     # if "SyntaxError" in error_message: 
-#                     #     print(f"Error executing {executable_plan_path}: {e}")
-#                     #     fixed_file_path = call_gpt_fix(str(e), executable_plan_path)
-#                     #     clean_python_code(fixed_file_path, executable_plan_path)
-#                     #     print("Retrying execution after fixing syntax errors...")
-#                     #     # TODO: seems no retry code here? just did some format convert.
-#                     #     # TODO: seems like no only syntax error sometimes is Key errors or so
+                # step3. check if there is a syntax error
+                try:
+                    # Run the executable_plan.py inside the command folder
+                    subprocess.run(["python", executable_plan_path], check=True)
+                    print("Execute success.")
+                    break
+                except subprocess.CalledProcessError as e:
+                    error_message = e.stderr if e.stderr else str(e)
+                    print(f"Error executing {executable_plan_path}: {e}")
+                    fixed_file_path = call_gpt_fix(str(e), executable_plan_path)
+                    clean_python_code(fixed_file_path, executable_plan_path)
+                    print("Retrying execution after fixing syntax errors...")
+                    # if "SyntaxError" in error_message: 
+                    #     print(f"Error executing {executable_plan_path}: {e}")
+                    #     fixed_file_path = call_gpt_fix(str(e), executable_plan_path)
+                    #     clean_python_code(fixed_file_path, executable_plan_path)
+                    #     print("Retrying execution after fixing syntax errors...")
+                    #     # TODO: seems no retry code here? just did some format convert.
+                    #     # TODO: seems like no only syntax error sometimes is Key errors or so
                         
-#                     # else:
-#                     #     print(f"Non-syntax error encountered in {executable_plan_path}: {e}")
-#             else:
-#                 print(f"Tried {max_attempt} times. Cannot generate any executable code.")
-#                 print("Task Failed.")
+                    # else:
+                    #     print(f"Non-syntax error encountered in {executable_plan_path}: {e}")
+            else:
+                print(f"Tried {max_attempt} times. Cannot generate any executable code.")
+                print("Task Failed.")
                         
 
-#             # step 4.verify whether the task is completed
-#             replan_path = None
-#             for i in range(max_attempt):
-#                 print(f"Attempt {i+1} of {max_attempt}: Verify if the task was successful?")
-#                 # TODO: need to be fixed
-#                 verify_result = verify_plan(command_folder)
-#                 if verify_result["isComplete"]:
-#                     print("Task completed successfully")
-#                     break
-#                 else:
-#                     print("Verification result: Task failed. Reason: ", verify_result['failure_reason'])
-#                     if verify_result['failure_reason'] == "Unknown":
-#                         print("Task failed, reason:", verify_result['failure_reason'], "cannot replan. End.")
-#                         break
-#                     else:
-#                         # replan based on the failure reason, and execute the plan again from previous step
-#                         print("==start to replan==")
-#                         try:
-#                             replan_path = replan_main(replan_args, verify_result, replan_path)
-#                             exe_path = execute_plan_main(replan_args)
-#                             # print("exe path is??")
-#                             # print(exe_path)
-#                             # clean_python_code(exe_path, exe_path)
-#                             subprocess.run(["python", exe_path], check=True)
-#                             # step 5. verify the task again
-#                             verify_result = verify_plan(command_folder)
-#                             if verify_result["isComplete"]:
-#                                 print("[Replan] Task completed successfully")
-#                                 break
-#                             else:
-#                                 print("[Replan] Task failed")
+            # step 4.verify whether the task is completed
+            replan_path = None
+            for i in range(max_attempt):
+                print(f"Attempt {i+1} of {max_attempt}: Verify if the task was successful?")
+                # TODO: need to be fixed
+                verify_result = verify_plan(command_folder)
+                if verify_result["isComplete"]:
+                    print("Task completed successfully")
+                    break
+                else:
+                    print("Verification result: Task failed. Reason: ", verify_result['failure_reason'])
+                    if verify_result['failure_reason'] == "Unknown":
+                        print("Task failed, reason:", verify_result['failure_reason'], "cannot replan. End.")
+                        break
+                    else:
+                        # replan based on the failure reason, and execute the plan again from previous step
+                        print("==start to replan==")
+                        try:
+                            replan_path = replan_main(replan_args, verify_result, replan_path)
+                            exe_path = execute_plan_main(replan_args)
+                            # print("exe path is the path of the replaned executable_plan.py:", exe_path)
+                            # clean_python_code(exe_path, exe_path)
+                            subprocess.run(["python", exe_path], check=True)
+                            # # step 5. verify the task again
+                            # verify_result = verify_plan(command_folder)
+                            # if verify_result["isComplete"]:
+                            #     print("[Replan] Task completed successfully")
+                            #     break
+                            # else:
+                            #     print("[Replan] Task failed")
 
-#                         except Exception as e:
-#                             print(f"Error in replan: {e}")
-#             else:
-#                 print(f"replan for max_attempt {max_attempt} times. Failed.")
-#     else:
-#         print("No plan generated")
+                        except Exception as e:
+                            print(f"Error in replan: {e}")
+                            fixed_file_path = call_gpt_fix(str(e), exe_path)
+                            clean_python_code(fixed_file_path, exe_path)
+                            print("Retrying execution after fixing syntax errors...")
+                            try:
+                                subprocess.run(["python", exe_path], check=True)
+                            except Exception as e:
+                                print(f"Error in replan: {e}")
+                                break
+            else:
+                print(f"replan for max_attempt {max_attempt} times. Failed.")
+    else:
+        print("No plan generated")
             
 if __name__ == "__main__":
     main()
     
-    # error_message = """
-    # SyntaxError: invalid syntax
-    # Error executing ./logs/Place_the_Bar_of_soap_in_the_sink_first_and_then_place_dishsponge_in_the_sink_plans_gpt_gpt-4o-mini_03-04-2025-17-23-51/executable_plan.py: 
-    # Command '['python', './logs/Place_the_Bar_of_soap_in_the_sink_first_and_then_place_dishsponge_in_the_sink_plans_gpt_gpt-4o-mini_03-04-2025-17-23-51/executable_plan.py']' returned non-zero exit status 1.
-    # """
-    # command_folder = "Place_the_Bar_of_soap_in_the_sink_first_and_then_place_dishsponge_in_the_sink_plans_gpt_gpt-4o-mini_03-04-2025-17-23-51"
-    # command_folder = "_Turn_on_Sink_faucet_and_put_toilet_paper_in_the_trash_plans_gpt_gpt-4_03-03-2025-16-49-11"
-
-    # response = {'isComplete': False, 'completed_tasks': [], 'remaining_tasks': ['Turn on Sink faucet', 'Put toilet paper in the trash']}
-    # print(response)
-    # is_complete = response["isComplete"]
-    # completed_tasks = response["completed_tasks"]
-    # remaining_tasks = response["remaining_tasks"]
-    # print(is_complete)
-    # print(completed_tasks)
-    # print(remaining_tasks)
 
     

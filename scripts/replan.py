@@ -114,6 +114,8 @@ def replan_code_file(expt_name, client=client, prev_error=None, prev_code_file=N
     For Initialization stage, which should be a segment of python code, starts with ### Initialization Start and ends with ### Initialization End, 
     this is the section of initialzation the environment, you need to use Teleport to setup agent's position.
     And redo the previously completed subtasks, such as pickup the specific object using objectID, or Turn on something using objectID. Make sure these are acted by the correct agent. In this part, you should use the correct syntax and method of actionfrom ai2thor library.
+    These are the actions you can use for initialization, which are from ai2thor library: [PickupObject, PutObject, DropHandObject, ThrowObject, MoveHeldObjectAhead, MoveHeldObject, RotateHeldObject, DirectionalPush, PushObject, PullObject, PlaceObjectAtPoint ,OpenObject, CloseObject, BreakObject, CookObject, SliceObject, ToggleObjectOn, ToggleObjectOff, DirtyObject, CleanObject, FillObjectWithLiquid, EmptyLiquidFromObject, UseUpObject]
+    
     ##Here is an example of Initialization:
     {init_prompt}
 
@@ -142,9 +144,9 @@ def replan_code_file(expt_name, client=client, prev_error=None, prev_code_file=N
         {prev_error}
         """
 
-    print('=======')
+    # print('=======')
     # print(prompt)
-    print('=======')
+    # print('=======')
     
     # 调用 OpenAI API (使用 gpt-4o-mini)
     response = client.chat.completions.create(

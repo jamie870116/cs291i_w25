@@ -47,19 +47,19 @@ def LM(prompt, llm_model, llm_version, max_tokens=128, temperature=0, stop=None,
                                                 frequency_penalty = frequency_penalty)
 
             return response, response.choices[0].message.content.strip()
-    elif llm_model == "gemini":
-        response = gemini_client.models.generate_content(
-            model=llm_version,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                max_output_tokens=max_tokens,
-                temperature=temperature,
-                frequency_penalty=frequency_penalty,
-            ))
-        if '```python' in response.text.strip():
-            content = response.text.strip().split('```python')[1].split('```')[0]
-            return response, content.strip()
-        return response, response.text.strip()
+    # elif llm_model == "gemini":
+    #     response = gemini_client.models.generate_content(
+    #         model=llm_version,
+    #         contents=prompt,
+    #         config=types.GenerateContentConfig(
+    #             max_output_tokens=max_tokens,
+    #             temperature=temperature,
+    #             frequency_penalty=frequency_penalty,
+    #         ))
+    #     if '```python' in response.text.strip():
+    #         content = response.text.strip().split('```python')[1].split('```')[0]
+    #         return response, content.strip()
+    #     return response, response.text.strip()
 
 def decompose_task(test_tasks, prompt, llm_model, llama_version):
     decomposed_plan = []
