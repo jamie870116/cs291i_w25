@@ -182,7 +182,7 @@ def main():
             }
             # step 2.
             # Run functions synchronously
-            for _ in range(3):
+            for _ in range(max_attempt):
                 exe_path = execute_plan_main(execute_plan_args)
 
                 executable_plan_path = f"./logs/{command_folder}/executable_plan.py"
@@ -197,17 +197,22 @@ def main():
                     break
                 except subprocess.CalledProcessError as e:
                     error_message = e.stderr if e.stderr else str(e)
-                    if "SyntaxError" in error_message:
-                        print(f"Error executing {executable_plan_path}: {e}")
-                        fixed_file_path = call_gpt_fix(str(e), executable_plan_path)
-                        clean_python_code(fixed_file_path, executable_plan_path)
-                        print("Retrying execution after fixing syntax errors...")
-                        # TODO: seems no retry code here? just did some format convert.
+                    print(f"Error executing {executable_plan_path}: {e}")
+                    fixed_file_path = call_gpt_fix(str(e), executable_plan_path)
+                    clean_python_code(fixed_file_path, executable_plan_path)
+                    print("Retrying execution after fixing syntax errors...")
+                    # if "SyntaxError" in error_message: 
+                    #     print(f"Error executing {executable_plan_path}: {e}")
+                    #     fixed_file_path = call_gpt_fix(str(e), executable_plan_path)
+                    #     clean_python_code(fixed_file_path, executable_plan_path)
+                    #     print("Retrying execution after fixing syntax errors...")
+                    #     # TODO: seems no retry code here? just did some format convert.
+                    #     # TODO: seems like no only syntax error sometimes is Key errors or so
                         
-                    else:
-                        print(f"Non-syntax error encountered in {executable_plan_path}: {e}")
+                    # else:
+                    #     print(f"Non-syntax error encountered in {executable_plan_path}: {e}")
             else:
-                print("Tried 3 times. Cannot generate any executable code.")
+                print(f"Tried {max_attempt} times. Cannot generate any executable code.")
                 print("Task Failed.")
                         
 
@@ -215,6 +220,7 @@ def main():
             replan_path = None
             for i in range(max_attempt):
                 print(f"Attempt {i+1} of {max_attempt}: Verify if the task was successful?")
+                # TODO: need to be fixed
                 verify_result = verify_plan(command_folder)
                 if verify_result["isComplete"]:
                     print("Task completed successfully")
@@ -228,8 +234,8 @@ def main():
                         # replan based on the failure reason, and execute the plan again from previous step
                         print("==start to replan==")
                         try:
-                            replan_path = replan_main(replan_args, verify_result, i, replan_path)
-                            exe_path = execute_plan_main(replan_args, i)
+                            replan_path = replan_main(replan_args, verify_result, replan_path)
+                            exe_path = execute_plan_main(replan_args)
                             subprocess.run(["python", exe_path], check=True)
                             # step 5. verify the task again
                             verify_result = verify_plan(command_folder)
