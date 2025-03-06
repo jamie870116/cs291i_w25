@@ -94,11 +94,11 @@ def compile_aithor_exec_file(expt_name, replan=False):
     with open(f"{log_path}/{file_name}", 'w') as d:
         d.write(executable_plan)
         
-    return (f"{log_path}/{file_name}.py")
+    return (f"{log_path}/{file_name}")
 
 def execute_plan_main(args):
     expt_name = args["command"]
-    print ('Run ', expt_name)
+    print('Run ', expt_name)
     if args["replan"]:
         ai_exec_file = compile_aithor_exec_file(expt_name, args["replan"])
     else:

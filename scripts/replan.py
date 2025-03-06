@@ -7,7 +7,7 @@ from openai import OpenAI
 
 client = OpenAI(api_key=Path('api_key.txt').read_text())
 
-def replan_code_file(expt_name, client=client, prev_error=None):
+def replan_code_file(expt_name, client=client, prev_error=None, prev_code_file=None):
     log_path = os.getcwd() + "/logs/" + expt_name
 
     log_file = open(log_path + "/log.txt")
@@ -31,7 +31,8 @@ def replan_code_file(expt_name, client=client, prev_error=None):
         scene = "bathroom"
 
     # 读取 "code_plan.py" 的内容
-    with open(f"{log_path}/code_plan.py", "r", encoding="utf-8") as f:
+    code_file_path = prev_code_file or f"{log_path}/code_plan.py"
+    with open(code_file_path, "r", encoding="utf-8") as f:
         code_plan = f.read()
 
     # 读取 "environment_states.json" 的内容
@@ -162,10 +163,10 @@ def replan_code_file(expt_name, client=client, prev_error=None):
 
     return (f"{log_path}/code_replan.py")
 
-def replan_main(args, prev_error):
+def replan_main(args, prev_error, prev_code_file=None):
     client = OpenAI(api_key=Path('api_key.txt').read_text())
     expt_name = args["command"]
-    ai_exec_file = replan_code_file(expt_name, client, prev_error)
+    ai_exec_file = replan_code_file(expt_name, client, prev_error, prev_code_file)
     print('Finished')
     return ai_exec_file
 

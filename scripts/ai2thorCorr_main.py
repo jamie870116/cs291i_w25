@@ -126,12 +126,12 @@ def verify_plan(command_folder):
         your output should be in the following format in dictionary:
         ## Output Format
         {{
-        'isComplete': bool,
-        'failure_reason': str of reason why the task is failed,
-        'completed_tasks': ['list of completed item', empty list if none],
-        'remaining_tasks': ['list of completed item', empty list if none],
+        "isComplete": bool,
+        "failure_reason": str of reason why the task is failed,
+        "completed_tasks": ['list of completed item', empty list if none],
+        "remaining_tasks": ['list of completed item', empty list if none],
         }}
-        * Note: only return the json, don't say anything else.
+        * Note: only return the JSON schema format, don't say anything else. Do not use markdown format.
     """
     response = client.chat.completions.create(
         model="gpt-4o-mini",  
@@ -180,55 +180,66 @@ def main():
             }
             # step 2.
             # Run functions synchronously
-            exe_path = execute_plan_main(execute_plan_args)  
-        
-            executable_plan_path = f"./logs/{command_folder}/executable_plan.py"
+            for _ in range(3):
+                exe_path = execute_plan_main(execute_plan_args)
 
-            clean_python_code(executable_plan_path, executable_plan_path)
-                
-            # step3. check if there is a syntax error
-            try:
-                # Run the executable_plan.py inside the command folder
-                subprocess.run(["python", executable_plan_path], check=True)
-                print("No syntax error")
-                # replan_main(replan_args, "")
-                break
-            except subprocess.CalledProcessError as e:
-                attempt += 1
-                error_message = e.stderr if e.stderr else str(e)
-                if "SyntaxError" in error_message:
-                    print(f"Error executing {executable_plan_path}: {e}")
-                    fixed_file_path = call_gpt_fix(str(e), executable_plan_path)
-                    clean_python_code(fixed_file_path, executable_plan_path)
-                    print("Retrying execution after fixing syntax errors...")
-                else:
-                    print(f"Non-syntax error encountered in {executable_plan_path}: {e}")
+                executable_plan_path = f"./logs/{command_folder}/executable_plan.py"
+
+                clean_python_code(executable_plan_path, executable_plan_path)
+
+                # step3. check if there is a syntax error
+                try:
+                    # Run the executable_plan.py inside the command folder
+                    subprocess.run(["python", executable_plan_path], check=True)
+                    print("Execute success.")
+                    break
+                except subprocess.CalledProcessError as e:
+                    error_message = e.stderr if e.stderr else str(e)
+                    if "SyntaxError" in error_message:
+                        print(f"Error executing {executable_plan_path}: {e}")
+                        fixed_file_path = call_gpt_fix(str(e), executable_plan_path)
+                        clean_python_code(fixed_file_path, executable_plan_path)
+                        print("Retrying execution after fixing syntax errors...")
+                        # TODO: seems no retry code here? just did some format convert.
+                    else:
+                        print(f"Non-syntax error encountered in {executable_plan_path}: {e}")
+            else:
+                print("Tried 3 times. Cannot generate any executable code.")
+                print("Task Failed.")
                         
 
             # step 4.verify whether the task is completed
-            verify_result = verify_plan(command_folder)
-            if verify_result["isComplete"]:
-                print("Task completed successfully")
-            else:
-                if verify_result['failure_reason'] == "Unknown":
-                    print("Task failed")
+            replan_path = None
+            for _ in range(3):
+                print("Verify if the task was successful?")
+                verify_result = verify_plan(command_folder)
+                if verify_result["isComplete"]:
+                    print("Task completed successfully")
                     break
                 else:
-                    # replan based on the failure reason, and execute the plan again from previous step
-                    try:
-                        replan_path = replan_main(replan_args, verify_result)
-                        exe_path = execute_plan_main(replan_args)
-                        subprocess.run(["python", exe_path], check=True)
-                        # step 5. verify the task again
-                        verify_result = verify_plan(command_folder)
-                        if verify_result["isComplete"]:
-                            print("Task completed successfully")
-                        else:
-                            print("Task failed")
-                        
-                    except Exception as e:
-                        print(f"Error in replan: {e}")
-            # print(response)
+                    print("Verification result: Task failed.")
+                    if verify_result['failure_reason'] == "Unknown":
+                        print("Task failed, reason:", verify_result['failure_reason'], "cannot replan. End.")
+                        break
+                    else:
+                        # replan based on the failure reason, and execute the plan again from previous step
+                        print("==start to replan==")
+                        try:
+                            replan_path = replan_main(replan_args, verify_result, replan_path)
+                            exe_path = execute_plan_main(replan_args)
+                            subprocess.run(["python", exe_path], check=True)
+                            # step 5. verify the task again
+                            verify_result = verify_plan(command_folder)
+                            if verify_result["isComplete"]:
+                                print("[Replan] Task completed successfully")
+                                break
+                            else:
+                                print("[Replan] Task failed")
+
+                        except Exception as e:
+                            print(f"Error in replan: {e}")
+            else:
+                print("replan for 3 times. Failed.")
     else:
         print("No plan generated")
             
