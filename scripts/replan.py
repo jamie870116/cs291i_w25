@@ -113,13 +113,14 @@ def replan_code_file(expt_name, client=client, prev_error=None, prev_code_file=N
     Your output should be two part of code, one is the initialization part, and another is code plan part. 
     For Initialization stage, which should be a segment of python code, starts with ### Initialization Start and ends with ### Initialization End, 
     this is the section of initialzation the environment, you need to use Teleport to setup agent's position.
-    And redo the previously completed subtasks, such as pickup the specific object using objectID, or Turn on something using objectID. Make sure these are acted by the correct agent. In this part, you should use the correct syntax and method of actionfrom ai2thor library.
+    And redo the previously completed subtasks, such as pickup the specific object using objectID, or Turn on something using objectID. Make sure these are acted by the correct agent.
     These are the actions you can use for initialization, which are from ai2thor library: [PickupObject, PutObject, DropHandObject, ThrowObject, MoveHeldObjectAhead, MoveHeldObject, RotateHeldObject, DirectionalPush, PushObject, PullObject, PlaceObjectAtPoint ,OpenObject, CloseObject, BreakObject, CookObject, SliceObject, ToggleObjectOn, ToggleObjectOff, DirtyObject, CleanObject, FillObjectWithLiquid, EmptyLiquidFromObject, UseUpObject]
     
     ##Here is an example of Initialization:
     {init_prompt}
 
-    The code plan part should be like the Original Code Plan. Refer to ai2thor_actions which is a list of actions that robot can perform. The code plan part do not need to redo the previously success subtask. The previously success subtask should be done in the Initialization stage.
+    The code plan part should be like the Original Code Plan. Refer to ai2thor_actions which is a list of actions that robot can perform. The code plan part do not need to redo the previously success subtask. The previously success subtask should be done in the Initialization stage. Be aware of that agent cannot put object if it is not picked up. Assign the correct agent to the action.
+    In this part, you should use the correct syntax and method of actionfrom ai2thor library.
     Your output format should be like:
     ### Initialization Start
     code of initialization...

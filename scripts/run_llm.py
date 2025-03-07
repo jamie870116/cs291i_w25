@@ -216,9 +216,11 @@ def run_llm_main(args):
     for robots_list in robots_test_tasks:
         task_robots = []
         for i, r_id in enumerate(robots_list):
-            rob = robots.robots [r_id-1]
+            # rob = robots.robots [r_id-1]
+            rob = {'name': 'robot' + str(i+1), 'skills': ['GoToObject', 'OpenObject', 'CloseObject', 'BreakObject', 'SliceObject', 'SwitchOn', 'SwitchOff', 
+                                         'PickupObject', 'PutObject', 'DropHandObject', 'ThrowObject', 'PushObject', 'PullObject']}
             # rename the robot
-            rob['name'] = 'robot' + str(i+1)
+            # rob['name'] = 'robot' + str(i+1)
             task_robots.append(rob)
         available_robots.append(task_robots)
 

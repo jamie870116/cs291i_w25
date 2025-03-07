@@ -12,7 +12,7 @@ api_key_filename = "api_key"
 llm_args = {
     "openai_api_key_file": api_key_filename,
     "test_set": "tests",
-    "floor_plan": 414,
+    "floor_plan":6,
     "prompt_decompse_set": "train_task_decompose",
     "llm_model": "gpt",
     "gpt_version": "gpt-4o-mini",
