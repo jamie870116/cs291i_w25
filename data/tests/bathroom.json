@@ -1,0 +1,58 @@
+{
+    "task": "Turn on Sink faucet and put toilet paper in the trash",
+    "robot list": [
+        1,
+        2
+    ],
+    "object_states": [
+        {
+            "name": "Faucet",
+            "contains": [],
+            "state": "Toggled"
+        },
+        {
+            "name": "GarbageCan ",
+            "contains": [
+                "ToiletPaper"
+            ],
+            "state": "contains"
+        }
+    ],
+    "trans": 0,
+    "max_trans": 0,
+    "verify_ground_truth": "Check if at least one Faucet is ON and a GarbageCan contains at least one ToiletPaper.",
+    "floor_plan": 414
+}
+{
+    "task": "Place the Bar of soap in the sink first and then place dishsponge in the sink",
+    "robot list": [
+        1,
+        2,
+        3
+    ],
+    "object_states": [
+        {
+            "name": "Sink",
+            "contains": [
+                "SoapBar",
+                "ScrubBrush"
+            ],
+            "state": "None"
+        }
+    ],
+    "trans": 0,
+    "max_trans": 0,
+    "verify_ground_truth": "Check if the Sink contains the SoapBar and the ScrubBrush.",
+    "floor_plan": 414
+}
+{
+    "task": "Fill water in the BathTub",
+    "robot list": [
+        1
+    ],
+    "object_states": [],
+    "trans": 0,
+    "max_trans": 0,
+    "verify_ground_truth": "Check if the BathTub Faucet is ON(Toggled). Or the BathTub is filled with water.",
+    "floor_plan": 414
+}
