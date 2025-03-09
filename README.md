@@ -99,6 +99,19 @@ For example:
 ```
 python logs/_Turn_on_Sink_faucet_and_put_toilet_paper_in_the_trash_plans_gpt_gpt-4_03-01-2025-13-56-32/executable_plan.py
 ```
+
+### Verify the result
+
+The result of execution is stored in the ```environment_states.json``` file. You can verify the result by running the following script to check if the task is completed. ```command``` needs to be the folder name in the ```logs``` folder where the executable plans generated are stored. 
+
+```
+python scripts/verify.py --command {command}
+```
+or 
+```
+python scripts/verify_llm.py --command {command}
+```
+
 <!-- ## Dataset
 The repository contains numerous commands and robots with various skill sets to perform heterogenous robot tasks. 
 
