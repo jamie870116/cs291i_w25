@@ -1,0 +1,32 @@
+Room,Success Rate (%),Total Tasks,Successful Tasks,Total Time Spent (s),Avg Time Per Task (s),Task Name,Task Success Rate (%),Completed Tasks,Total Attempts,Task Total Time (s),Avg Task Time (s)
+bedroom,90.00,10,9,0.079897,0.007990,Place_the_laptop_on_the_bed_plans,100.00,3,3,0.011680,0.003893
+bedroom,90.00,10,9,0.079897,0.007990,Put_the_book_in_the_box_and_Turn_on_the_mobile_phone_plans,100.00,3,3,0.049537,0.016512
+bedroom,90.00,10,9,0.079897,0.007990,Open_a_book_in_a_well_lit_room_plans,75.00,3,4,0.018680,0.004670
+bathroom,100.00,9,9,0.038208,0.004245,Place_the_Bar_of_soap_in_the_sink_first_and_then_place_dishsponge_in_the_sink_plans,100.00,3,3,0.009188,0.003063
+bathroom,100.00,9,9,0.038208,0.004245,Turn_on_Sink_faucet_and_put_toilet_paper_in_the_trash_plans,100.00,3,3,0.027164,0.009055
+bathroom,100.00,9,9,0.038208,0.004245,Fill_water_in_the_BathTub_plans,100.00,3,3,0.001856,0.000619
+livingroom,77.78,9,7,0.056092,0.006232,Open_the_Laptop_and_Turn_it_ON __plans,100.00,3,3,0.023317,0.007772
+livingroom,77.78,9,7,0.056092,0.006232,Trash_the_book_and_newspaper__plans,66.67,2,3,0.012214,0.004071
+livingroom,77.78,9,7,0.056092,0.006232,Break_a_vase_and_Turn_on_TV_plans,66.67,2,3,0.020561,0.006854
+kitchen,100.00,10,10,0.083507,0.008351,Put_apple_in_fridge_and_switch_off_the_light_plans,100.00,4,4,0.037782,0.009445
+kitchen,100.00,10,10,0.083507,0.008351,Wash_the_lettuce_and_place_lettuce_on_the_Countertop_plans,100.00,3,3,0.025713,0.008571
+kitchen,100.00,10,10,0.083507,0.008351,Slice_the_tomato_plans,100.00,3,3,0.020012,0.006671
+
+Overall Summary
+Total Success Rate (%),Total Tasks,Successful Tasks,Total Time Spent (s),Avg Time Successful Tasks (s)
+92.11,38,35,0.257703,0.007155
+
+Task Summary
+Task Name,Task Success Rate (%),Completed Tasks,Total Attempts,Task Total Time (s),Avg Task Time (s)
+Place_the_laptop_on_the_bed_plans,100.00,3,3,0.011680,0.003893
+Put_the_book_in_the_box_and_Turn_on_the_mobile_phone_plans,100.00,3,3,0.049537,0.016512
+Open_a_book_in_a_well_lit_room_plans,75.00,3,4,0.018680,0.004670
+Place_the_Bar_of_soap_in_the_sink_first_and_then_place_dishsponge_in_the_sink_plans,100.00,3,3,0.009188,0.003063
+Turn_on_Sink_faucet_and_put_toilet_paper_in_the_trash_plans,100.00,3,3,0.027164,0.009055
+Fill_water_in_the_BathTub_plans,100.00,3,3,0.001856,0.000619
+Open_the_Laptop_and_Turn_it_ON __plans,100.00,3,3,0.023317,0.007772
+Trash_the_book_and_newspaper__plans,66.67,2,3,0.012214,0.004071
+Break_a_vase_and_Turn_on_TV_plans,66.67,2,3,0.020561,0.006854
+Put_apple_in_fridge_and_switch_off_the_light_plans,100.00,4,4,0.037782,0.009445
+Wash_the_lettuce_and_place_lettuce_on_the_Countertop_plans,100.00,3,3,0.025713,0.008571
+Slice_the_tomato_plans,100.00,3,3,0.020012,0.006671
