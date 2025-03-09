@@ -4,10 +4,11 @@ import subprocess
 import argparse
 import json
 from openai import OpenAI
-
+import time
 client = OpenAI(api_key=Path('api_key.txt').read_text())
 
 def replan_code_file(expt_name, client=client, prev_error=None, prev_code_file=None):
+    time_start = time.time()
     log_path = os.getcwd() + "/logs/" + expt_name
 
     log_file = open(log_path + "/log.txt")
@@ -163,15 +164,30 @@ def replan_code_file(expt_name, client=client, prev_error=None, prev_code_file=N
     # 输出到 "code_replan.py"
     with open(f"{log_path}/code_replan.py", "w", encoding="utf-8") as f:
         f.write(generated_code)
-
+    time_end = time.time()
+    exe_time = time_end - time_start
+    print(f"Time taken: {exe_time:.6f} seconds")
     return (f"{log_path}/code_replan.py")
 
 def replan_main(args, prev_error, prev_code_file=None):
+    time_start = time.time()
     client = OpenAI(api_key=Path('api_key.txt').read_text())
     expt_name = args["command"]
     ai_exec_file = replan_code_file(expt_name, client, prev_error, prev_code_file)
+    time_end = time.time()
+    exe_time = time_end - time_start
+    print(f"Time taken: {exe_time:.6f} seconds")
     print('Finished')
     return ai_exec_file
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--command", type=str, required=True)
+    args = parser.parse_args()
+
+    expt_name = args.command
+    # ai_exec_file = replan_main(args)
+    replan_code_file(expt_name)
 
 
 # parser = argparse.ArgumentParser()

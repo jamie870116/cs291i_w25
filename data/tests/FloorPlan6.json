@@ -1,1 +1,1 @@
-{"task": "Wash the lettuce and place lettuce on the Countertop", "robot list" : [1, 2], "object_states" : [{"name": "CounterTop", "contains": ["Lettuce"], "state": "None"}], "trans":0, "max_trans":0, "verify_ground_truth": "Check if at least one Lettuce is on the Countertop."} 
+{"task": "Slice the tomato", "robot list" : [1, 2], "object_states" : [{"name": "Tomato", "contains": [], "state": "SLICED"}], "trans":0, "max_trans":0, "verify_ground_truth": "Check if at least one Tomato is sliced."}

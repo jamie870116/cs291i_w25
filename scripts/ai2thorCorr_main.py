@@ -7,12 +7,13 @@ from pathlib import Path
 import re
 import os
 import json
+import time
 api_key_filename = "api_key"
 
 llm_args = {
     "openai_api_key_file": api_key_filename,
     "test_set": "tests",
-    "floor_plan":6,
+    "floor_plan": 414,
     "prompt_decompse_set": "train_task_decompose",
     "llm_model": "gpt",
     "gpt_version": "gpt-4o-mini",
@@ -24,7 +25,7 @@ client = openai.OpenAI(api_key=Path('api_key.txt').read_text())
 
 def call_gpt_fix(error_message, file_path):
     print("Calling GPT-4o-mini to fix the syntax error...")
-    
+    time_start = time.time()
     with open(file_path, "r") as f:
         file_content = f.read()
     
@@ -39,7 +40,9 @@ def call_gpt_fix(error_message, file_path):
     fixed_code = response.choices[0].message.content  # Extract the response
     with open(f"{file_path[:-3]}_fixed.py", "w", encoding='utf-8') as f:
         f.write(fixed_code)
-    
+    time_end = time.time()
+    exe_time = time_end - time_start
+    print(f"Time taken: {exe_time:.6f} seconds")
     return f'{file_path[:-3]}_fixed.py'
 
 
@@ -75,6 +78,7 @@ def clean_python_code(input_file, output_file):
         f.write(content)
 
 def verify_plan(command_folder):
+    time_start = time.time()
     # verify if the task is completed
     log_file = open(f"./logs/{command_folder}" + "/log.txt")
     log_data = log_file.readlines()
@@ -167,6 +171,9 @@ def verify_plan(command_folder):
     
     response = response.choices[0].message.content
     response = json.loads(response)
+    time_end = time.time()
+    exe_time = time_end - time_start
+    print(f"Time taken: {exe_time:.6f} seconds")
     return response
     
 

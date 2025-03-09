@@ -29,13 +29,13 @@ def exec_actions():
     
     # create new folders to save the images from the agents
     for i in range(no_robot):
-        folder_name = "agent_" + str(i+1) + '_re'
+        folder_name = "agent_" + str(i+1)
         folder_path = os.path.dirname(__file__) + "/" + folder_name
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
     
     # create folder to store the top view images
-    folder_name = "top_view_re"
+    folder_name = "top_view"
     folder_path = os.path.dirname(__file__) + "/" + folder_name
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)

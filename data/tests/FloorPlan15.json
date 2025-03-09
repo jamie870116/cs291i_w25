@@ -1,0 +1,1 @@
+{"task": "Put apple in fridge and switch off the light", "robot list" : [1, 2], "object_states" : [{"name": "Fridge", "contains": ["Apple"], "state": "None"},{"name": "LightSwitch", "contains": [], "state": "OFF"}], "trans":1, "max_trans":1, "verify_ground_truth": "Check if at least one Apple is in the Fridge and the Light is OFF."} 
