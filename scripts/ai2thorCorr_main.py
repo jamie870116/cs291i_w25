@@ -7,6 +7,10 @@ from pathlib import Path
 import re
 import os
 import json
+
+from fuzzywuzzy import process
+from fuzzywuzzy import fuzz
+
 api_key_filename = "api_key"
 
 llm_args = {
@@ -75,6 +79,7 @@ def clean_python_code(input_file, output_file):
         f.write(content)
 
 def verify_plan(command_folder):
+    
     # verify if the task is completed
     log_file = open(f"./logs/{command_folder}" + "/log.txt")
     log_data = log_file.readlines()
@@ -82,6 +87,17 @@ def verify_plan(command_folder):
     # verify_gt = log_data[10]
     # print("verify_gt is:")
     # print(verify_gt)
+
+    STATE_MAPPING = {
+        "ON": ["isToggled"],
+        "OFF": ["isToggled", False],
+        "BROKEN": ["isBroken"],
+        "FILLED": ["isFilledWithLiquid"],
+        "OPEN": ["isOpen"],
+        "CLOSED": ["isOpen", False],
+        "PICKED_UP": ["isPickedUp"],
+        "SLICED": ["isSliced"]
+    }
     
     gt = log_data[9]
     print("gt is:")
@@ -100,72 +116,138 @@ def verify_plan(command_folder):
             environment_states = json.load(f)
     
     # print(environment_states["object_info"]["GarbageCan_d3abea71"])
+    env_obj_info = environment_states["object_info"]
+    env_objs = env_obj_info.keys()
+    gt_json = json.loads(gt.split("=", 1)[1].strip().replace("'", '"'))
+    response = {}
+    for obj in gt_json:
+        obj_name = obj["name"]
+        state_desc = obj["state"]
+        print("obj_name:" + obj_name + ", state_desc:" + state_desc)
+
+        # Step 1: Find exact matches using prefix
+        prefix_matches = [item for item in env_objs if item.startswith(obj_name.strip())]
+
+        # Step 2: Use NLP fuzzy matching if no exact prefix matches found
+        fuzzy_matches = process.extractBests(obj_name, env_objs, score_cutoff=80)
+
+        # Combine both matching results
+        all_matches = prefix_matches + [match[0] for match in fuzzy_matches if match[0] not in prefix_matches]
+        print("Matched targets are: " + str(all_matches))
+        # Step 3: Find corresponding state/contain property
+        if fuzz.ratio(state_desc, "None") > 80:
+            print(2)
+            found_content = False
+            for matched_target in all_matches:
+                for gt_content in obj['contains']:
+                    print("ground truth contents and env state contents:")
+                    print(gt_content)
+                    print(env_obj_info[matched_target]['contains'])
+                    if env_obj_info[matched_target]['contains']:
+                        matched_content = process.extractOne(gt_content, env_obj_info[matched_target]['contains'], score_cutoff=80)
+                        if matched_content is not None:
+                            print("Matched content:")
+                            print(matched_content)
+                            found_content = True
+                            break
+                if found_content:
+                    break
+            response[obj_name] = "success" if found_content else "failed"
+        else:
+            print("1")
+            matched_property = None
+            for key, properties in STATE_MAPPING.items():
+                if process.extractOne(state_desc, [key], score_cutoff=80):  # Fuzzy match the state
+                    matched_property = properties
+                    break
+            
+            print("matched property is: " + str(matched_property))
+
+            # Step 4: Validate the object state
+            if matched_property:
+                success_found = False
+                for env_obj_match in all_matches:
+                    env_state = env_obj_info[env_obj_match]
+                    property_name = matched_property[0]
+                    expected_value = matched_property[1] if len(matched_property) > 1 else True
+                    print("expected and actual:")
+                    print(expected_value)
+                    print(env_state.get(property_name))
+                    if env_state.get(property_name) == expected_value:
+                        success_found = True
+                        break
+                response[obj_name] = "success" if success_found else "failed"
+            
+
     
-
-
-    prompt = f"""
-        you are a task planning expert. Your task is to verify if the task is completed or not. You will be given '''task''' which is the final goal, '''environment state''' which is the current state of environment, and '''ground truth''' which is the ground truth you should check in environment.
+    # prompt = f"""
+    #     you are a task planning expert. Your task is to verify if the task is completed or not. You will be given '''task''' which is the final goal, '''environment state''' which is the current state of environment, and '''ground truth''' which is the ground truth you should check in environment.
     
-        object information in '''environment state''' includes the object information:
-        {{"objectId": unique id of the object,
-        "objectType": object type, can have multiple same type of objects in the environment,
-        "position": position of the object,
-        "isPickedUp": bool, true if the object is picked up,
-        "isOpen": bool, true if the object is open,
-        "isSliced": bool, true if the object is sliced,
-        "isToggled": bool, true if the object is toggled,
-        "isBroken": bool, true if the object is broken,
-        "isFilledWithLiquid": bool, true if the object is filled with liquid,
-        "contains": list of object ids of the objects contained in the object,
-        "center": center of the object,
-        "size": size of the object,
-        }}
+    #     object information in '''environment state''' includes the object information:
+    #     {{"objectId": unique id of the object,
+    #     "objectType": object type, can have multiple same type of objects in the environment,
+    #     "position": position of the object,
+    #     "isPickedUp": bool, true if the object is picked up,
+    #     "isOpen": bool, true if the object is open,
+    #     "isSliced": bool, true if the object is sliced,
+    #     "isToggled": bool, true if the object is toggled,
+    #     "isBroken": bool, true if the object is broken,
+    #     "isFilledWithLiquid": bool, true if the object is filled with liquid,
+    #     "contains": list of object ids of the objects contained in the object,
+    #     "center": center of the object,
+    #     "size": size of the object,
+    #     }}
 
-        ## Input
-        ###task:
-        {task}
+    #     ## Input
+    #     ###task:
+    #     {task}
 
-        ### ground truth: this is a list of items you need to check in the environment, do not check other items if not specified in the ground truth.
-        {gt}
+    #     ### ground truth: this is a list of items you need to check in the environment, do not check other items if not specified in the ground truth.
+    #     {gt}
 
-        ### environment state
-        {environment_states}
+    #     ### environment state
+    #     {environment_states}
         
-        You should reason over the above information,
-        and tell me if the task is complete or not, if not, tell me what is completed and what was not. 
+    #     You should reason over the above information,
+    #     and tell me if the task is complete or not, if not, tell me what is completed and what was not. 
         
 
-        ### Task Completion Evaluation Criteria:
-        you are given the '''ground truth''' and '''environment state'''. If the 'state' of each object in '''ground truth''' is the following:
-        - contains: check If the 'state' of an object in ground truth is "contains", check if any object of the specified type exists within the 'contains' field of the environment object. Partial matches are acceptable.
+    #     ### Task Completion Evaluation Criteria:
+    #     you are given the '''ground truth''' and '''environment state'''. If the 'state' of each object in '''ground truth''' is the following:
+    #     - contains: check If the 'state' of an object in ground truth is "contains", check if any object of the specified type exists within the 'contains' field of the environment object. Partial matches are acceptable.
 
-        * Note: gound truth only show the type of objects, while environment state using object id. This meaning not specific object need to be activated.
-        There might be multiple same type of objects in the environment, be tolerant. If at least one object of the same type satisfy the ground truth condition, then the subtask is completed.
-        Noticed that '''ground truth''' and '''environment state''' might have different naming. For example, state of object in ground truth is Toggled, means that the isToggled field of the object in environment state is true.
-        Please be tolerent and some of Criteria is given to you in above.
-        If you are not sure whether object A contains object B, first check the contains list. If absent, verify if B's position is inside A’s bounding box (size + position tolerance).
+    #     * Note: gound truth only show the type of objects, while environment state using object id. This meaning not specific object need to be activated.
+    #     There might be multiple same type of objects in the environment, be tolerant. If at least one object of the same type satisfy the ground truth condition, then the subtask is completed.
+    #     Noticed that '''ground truth''' and '''environment state''' might have different naming. For example, state of object in ground truth is Toggled, means that the isToggled field of the object in environment state is true.
+    #     Please be tolerent and some of Criteria is given to you in above.
+    #     If you are not sure whether object A contains object B, first check the contains list. If absent, verify if B's position is inside A’s bounding box (size + position tolerance).
 
 
-        your output should be in the following format in dictionary:
-        ## Output Format
-        {{
-        "isComplete": bool,
-        "failure_reason": str of reason why the task is failed,
-        "according": str of reason why you determine the task is completed or not,
-        "completed_tasks": ['list of completed item', empty list if none],
-        "remaining_tasks": ['list of completed item', empty list if none],
-        }}
-        * Note: only return the JSON schema format, don't say anything else. Do not use markdown format.
-    """
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",  
-        messages=[
-            {"role": "system", "content": "You are a great robotic developer. You need to verify whether the task is completed or not."},
-            {"role": "user", "content": prompt}
-        ]
-    )
-    
-    response = response.choices[0].message.content
+    #     your output should be in the following format in dictionary:
+    #     ## Output Format
+    #     {{
+    #     "isComplete": bool,
+    #     "failure_reason": str of reason why the task is failed,
+    #     "according": str of reason why you determine the task is completed or not,
+    #     "completed_tasks": ['list of completed item', empty list if none],
+    #     "remaining_tasks": ['list of completed item', empty list if none],
+    #     }}
+    #     * Note: only return the JSON schema format, don't say anything else. Do not use markdown format.
+    # """
+    # response = client.chat.completions.create(
+    #     model="gpt-4o-mini",  
+    #     messages=[
+    #         {"role": "system", "content": "You are a great robotic developer. You need to verify whether the task is completed or not."},
+    #         {"role": "user", "content": prompt}
+    #     ]
+    # )
+    # response = response.choices[0].message.content
+    complete = True
+    for item in response.keys():
+        if response[item] == 'failed':
+            complete = False
+    response["isComplete"] = complete
+    response = json.dumps(response, indent=4)
     response = json.loads(response)
     return response
     
@@ -185,7 +267,7 @@ def main():
         run execute_plan_main(replan=True)
     5. run verify_plan again to check if the task is completed:
     '''
-    # command_folder = "Turn_on_Sink_faucet_and_put_toilet_paper_in_the_trash_plans_gpt_gpt-4o-mini_03-05-2025-18-48-47"
+    # command_folder = "Wash_the_lettuce_and_place_lettuce_on_the_Countertop_plans_gpt_gpt-4o-mini_03-08-2025-19-16-36"
     # verify_result = verify_plan(command_folder)
     # print(verify_result)
     # step 1.
@@ -248,6 +330,8 @@ def main():
                 print(f"Attempt {i+1} of {max_attempt}: Verify if the task was successful?")
                 # TODO: need to be fixed
                 verify_result = verify_plan(command_folder)
+                print("Verify Result is: ")
+                print(verify_result)
                 if verify_result["isComplete"]:
                     print("Task completed successfully")
                     break
@@ -266,7 +350,9 @@ def main():
                             # clean_python_code(exe_path, exe_path)
                             subprocess.run(["python", exe_path], check=True)
                             # # step 5. verify the task again
-                            # verify_result = verify_plan(command_folder)
+                            verify_result = verify_plan(command_folder)
+                            print("Verify Result is??")
+                            print(verify_result)
                             # if verify_result["isComplete"]:
                             #     print("[Replan] Task completed successfully")
                             #     break
