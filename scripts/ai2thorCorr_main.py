@@ -7,6 +7,9 @@ from pathlib import Path
 import re
 import os
 import json
+import time
+from fuzzywuzzy import fuzz, process
+
 api_key_filename = "api_key"
 
 llm_args = {
@@ -77,6 +80,7 @@ def clean_python_code(input_file, output_file):
         f.write(content)
 
 def verify_plan(command_folder):
+    time_start = time.time()
     # verify if the task is completed
     log_file = open(f"./logs/{command_folder}" + "/log.txt")
     log_data = log_file.readlines()
