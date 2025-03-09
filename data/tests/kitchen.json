@@ -1,0 +1,64 @@
+{
+    "task": "Slice the tomato",
+    "robot list": [
+        1,
+        2
+    ],
+    "object_states": [
+        {
+            "name": "Tomato",
+            "contains": [],
+            "state": "SLICED"
+        }
+    ],
+    "trans": 0,
+    "max_trans": 0,
+    "verify_ground_truth": "Check if at least one Tomato is SLICED.",
+    "floor_plan": 6
+}
+{
+    "task": "Wash the lettuce and place lettuce on the Countertop",
+    "robot list": [
+        1,
+        2
+    ],
+    "object_states": [
+        {
+            "name": "CounterTop",
+            "contains": [
+                "Lettuce"
+            ],
+            "state": "None"
+        }
+    ],
+    "trans": 0,
+    "max_trans": 0,
+    "verify_ground_truth": "Check if at least one Lettuce is on the Countertop. and if the lettuce is cleaned (or cold).",
+    "floor_plan": 6
+}
+
+{
+    "task": "Put apple in fridge and switch off the light",
+    "robot list": [
+        1,
+        2,
+    ],
+    "object_states": [
+        {
+            "name": "Fridge",
+            "contains": [
+                "Apple"
+            ],
+            "state": "None"
+        },
+        {
+            "name": "LightSwitch",
+            "contains": [],
+            "state": "OFF"
+        }
+    ],
+    "trans": 1,
+    "max_trans": 1,
+    "verify_ground_truth": "Check if at least one Apple is in the Fridge and the Light is OFF.",
+    "floor_plan": 15
+}

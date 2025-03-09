@@ -106,11 +106,12 @@ def execute_plan_main(args):
     print('Finished')
     return ai_exec_file
 
-
-# parser = argparse.ArgumentParser()
-# parser.add_argument("--command", type=str, required=True)
-# parser.add_argument("--replan", action="store_true")
-# args = parser.parse_args()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--command", type=str, required=True)
+    parser.add_argument("--replan", action="store_true")
+    args = parser.parse_args()
+    compile_aithor_exec_file(args.command, args.replan)
 
 # command
 # replanwe

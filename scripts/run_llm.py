@@ -7,6 +7,7 @@ from pathlib import Path
 from datetime import datetime
 import random
 import subprocess
+import time
 
 from openai import OpenAI
 
@@ -189,6 +190,7 @@ def get_args():
 
 
 def run_llm_main(args):
+    time_start = time.time()
     set_api_key(args["openai_api_key_file"])
 
     if not os.path.isdir(f"./logs/"):
@@ -287,6 +289,9 @@ def run_llm_main(args):
     elif args["llm_model"] == "gemini":
         code_plan = generate_code(decomposed_plan, allocated_plan, prompt, available_robots, args["llm_model"], args["gemini_model"])
 
+    time_end = time.time()
+    exe_time = time_end - time_start
+    print(f"Time taken: {exe_time:.6f} seconds")
 
     print("Storing generated plans...")
     # save generated plan
@@ -328,7 +333,9 @@ def run_llm_main(args):
     return exec_folders
 
 if __name__ == "__main__":
-    
+    # start time
+    start_time = time.time()
+
     # Get arguments
     args = get_args()
 
@@ -428,6 +435,10 @@ if __name__ == "__main__":
     elif args.llm_model == "gemini":
         code_plan = generate_code(decomposed_plan, allocated_plan, prompt, available_robots, args.llm_model, args.gemini_model)
 
+    # end time
+    end_time = time.time()
+    exe_time = end_time - start_time
+    print(f"Time taken: {exe_time:.6f} seconds")
 
     print("Storing generated plans...")
     # save generated plan

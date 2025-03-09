@@ -1,0 +1,67 @@
+{
+    "task": "Open the Laptop and Turn it ON. ",
+    "robot list": [
+        1,
+        2
+    ],
+    "object_states": [
+        {
+            "name": "Laptop",
+            "contains": [],
+            "state": "OPENED"
+        },
+        {
+            "name": "Laptop",
+            "contains": [],
+            "state": "ON"
+        }
+    ],
+    "trans": 0,
+    "max_trans": 0,
+    "verify_ground_truth": "Check if the Laptop is OPENED and ON(Toggled).",
+    "floor_plan": 201
+}
+{
+    "task": "Trash the book and newspaper",
+    "robot list": [
+        2,
+        3
+    ],
+    "object_states": [
+        {
+            "name": "GarbageCan",
+            "contains": [
+                "Book",
+                "Newspaper"
+            ],
+            "state": "None"
+        }
+    ],
+    "trans": 0,
+    "max_trans": 1,
+    "verify_ground_truth": "Check if the GarbageCan contains at least one Book and one Newspaper.",
+    "floor_plan": 201
+}
+{
+    "task": "Break a vase and Turn on TV",
+    "robot list": [
+        2,
+        3,
+    ],
+    "object_states": [
+        {
+            "name": "Vase",
+            "contains": [],
+            "state": "BROKEN"
+        },
+        {
+            "name": "Television",
+            "contains": [],
+            "state": "ON"
+        }
+    ],
+    "trans": 0,
+    "max_trans": 1,
+    "verify_ground_truth": "Check if the Vase is BROKEN and the Television is ON(Toggled).",
+    "floor_plan": 209
+}
