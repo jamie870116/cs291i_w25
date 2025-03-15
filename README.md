@@ -2,6 +2,27 @@
 # Enhancing Multi-Agent Robotic Systems with LLM-Driven Coordination
 This repository is a course project for the course Win25 CS291I "Introduction to Robotics" at University of California, Santa Barbara.
 
+Chieh-Ying (Jamie) Lai, Sirui Zeng, Xuanhe (Zephyr) Zhou
+
+## Abstract
+Multi-Agent Robotic Systems (MAS) provide significant benefits for task execution through distributed co-
+ordination. However, they encounter challenges in household environments due to dynamic object interactions
+and ambiguous task instructions. Traditional task allocation methods rely on heuristics and optimization
+techniques that often fail to adapt to real-time uncertainties. This paper proposes an LLM-driven multi-robot
+task planning framework that integrates verification and replanning mechanisms to improve robustness in
+execution. Our approach decomposes high-level task instructions into executable subtasks, assigns them
+dynamically to agents, and generates structured execution plans. In addition, this paper introduces and
+evaluates a verification and replanning mechanism designed to address execution failures, enhancing task
+success rates in dynamic environments. Experimental results within the AI2-THOR simulation environment
+demonstrate a 30% improvement in task success rate compared to SmartLLM, particularly in complex task
+scenarios. Our findings highlight the potential of LLMs in adaptive task coordination, while also addressing
+key challenges such as hallucination tendencies and environmental variable interpretation. Future work aims
+to further refine real-time adaptability and explore broader multi-agent coordination strategies.
+
+
+![Workflow](docs/workflow_slides.png)
+
+
 ## Setup
 Create a conda environment (or virtualenv):
 ```
@@ -112,12 +133,4 @@ or
 python scripts/verify_llm.py --command {command}
 ```
 
-<!-- ## Dataset
-The repository contains numerous commands and robots with various skill sets to perform heterogenous robot tasks. 
 
-Refer to ```data\final_test\``` and ```data\tests\``` for the various tasks, robots available for the tasks, and the final state of the environment after the task for evaluation. 
-
-The file name corresponds to the AI2THOR floor plans where the task will be executed. 
-
-Refer to ```resources\robots.py``` for the list of robots used in the final test and the skills possessed by each robot. 
- -->
