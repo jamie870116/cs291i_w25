@@ -1,1 +1,1 @@
-{"task": "Place the laptop on the bed", "robot list" : [1,2], "object_states" : [{"name": "Bed","contains": ["Laptop"],"state": "None"}], "trans":0, "max_trans":0, "verify_ground_truth": "Check if the Laptop is on the Bed. The Bed should contain the Laptop."}
+{"task": "Open a book in a well lit room", "robot list" : [1,2], "object_states" : [{"name": "Book","contains": [],"state": "OPENED"},{"name": "LightSwitch","contains": [],"state": "On"}], "trans":0, "max_trans":0, "verify_ground_truth": "Check if the Book is OPENED and the Light is ON(Toggled)."}

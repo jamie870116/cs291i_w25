@@ -340,7 +340,7 @@ def main():
                     print("Task completed successfully")
                     break
                 else:
-                    print("Verification result: Task failed. Reason: ", verify_result['failure_reason'])
+                    print("Verification result: Task failed. Reason: ", verify_result)
                     if verify_result['failure_reason'] == "Unknown":
                         print("Task failed, reason:", verify_result['failure_reason'], "cannot replan. End.")
                         break

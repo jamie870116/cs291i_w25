@@ -1,1 +1,1 @@
-{"task": "Trash the book and newspaper ","robot list": [1,2],"object_states": [{"name": "GarbageCan","contains": ["Book", "Newspaper"],"state": "None"}],"trans": 0,"max_trans": 0,"verify_ground_truth": "Check if the GarbageCan contains at least one Book and one Newspaper."}
+{"task": "Open the Laptop and Turn it ON.","robot list": [1,2],"object_states": [{"name": "Laptop", "contains": [],"state": "OPENED"}, {"name": "Laptop","contains": [],"state": "ON"}],"trans": 0,"max_trans": 0,"verify_ground_truth": "Check if the Laptop is OPENED and ON(Toggled)."}

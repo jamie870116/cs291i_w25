@@ -183,11 +183,12 @@ def replan_main(args, prev_error, prev_code_file=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--command", type=str, required=True)
+    parser.add_argument("--prev-error", type=str, required=False)
     args = parser.parse_args()
 
     expt_name = args.command
     # ai_exec_file = replan_main(args)
-    replan_code_file(expt_name)
+    replan_code_file(expt_name, prev_error=args.prev_error)
 
 
 # parser = argparse.ArgumentParser()
