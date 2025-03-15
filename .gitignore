@@ -2,10 +2,10 @@ api_key.txt
 deepseek_api_key.txt
 gemini_api_key.txt
 llama_api_key.txt
-avg_time_per-task.png
+
 room_states.csv
 success_rate_per_room.png 
 test_run_faucet_on_paper_off.py
-
+avg_time_per_task.png
 logs/*
 success_tasks/*
